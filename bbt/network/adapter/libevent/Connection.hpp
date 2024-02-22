@@ -9,21 +9,21 @@
  * 
  */
 #pragma once
-#include <bbt/network/interface/INetConnection.hpp>
+#include <bbt/network/Define.hpp>
+#include <bbt/network/adapter/base/Connection.hpp>
+#include <bbt/network/adapter/libevent/Event.hpp>
 
 namespace bbt::network::libevent
 {
 
 class Connection:
-    public interface::INetConnection
+    public base::BaseConnection
 {
 public:
-    Connection();
+    Connection(EventBase* base, evutil_socket_t socket, bbt::net::IPAddress& ipaddr);
     ~Connection();
 
     virtual void Init(evutil_socket_t fd);
-    virtual bool IsConnected() override;
-    virtual bool IsClosed() override;
     virtual void Close() override;
     virtual void OnRecv(const char* data, size_t len) override;
     virtual void OnSend(size_t succ_len) override;

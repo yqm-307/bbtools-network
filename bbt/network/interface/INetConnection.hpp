@@ -9,7 +9,8 @@
  * 
  */
 #pragma once
-#include <bbt/network/ICallback.hpp>
+#include <bbt/network/interface/ICallback.hpp>
+#include <bbt/base/net/IPAddress.hpp>
 
 namespace bbt::network::interface
 {
@@ -17,6 +18,13 @@ namespace bbt::network::interface
 class INetConnection:
     public INetCallback
 {
+public:
+    /**
+     * @brief 获取连接对端的ip地址
+     * 
+     * @return const bbt::net::IPAddress& 
+     */
+    virtual const bbt::net::IPAddress& GetPeerAddress() const = 0;
 };
 
 }

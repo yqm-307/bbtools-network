@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "functional": "cpp"
+        "*.bat": "bat",
+        "functional": "cpp",
+        "cassert": "cpp"
     }
 }

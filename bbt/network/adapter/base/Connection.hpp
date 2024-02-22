@@ -18,7 +18,10 @@ namespace bbt::network::base
 {
 
 
-
+/**
+ * @brief 基础的Connection类
+ * 
+ */
 class BaseConnection:
     public bbt::network::interface::INetConnection
 {
@@ -26,13 +29,14 @@ public:
     BaseConnection(int socket, const bbt::net::IPAddress& addr);
     ~BaseConnection();
 
-    virtual bool            IsConnected() override;
-    virtual bool            IsClosed() override;
+    virtual bool            IsConnected() const override final;
+    virtual bool            IsClosed() const override final;
     virtual void            Close() override;
     virtual void            OnRecv(const char* data, size_t len) override;
     virtual void            OnSend(size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
+    virtual const bbt::net::IPAddress& GetPeerAddress() const override final;
 private:
     int                     m_socket_fd{-1};
     bbt::net::IPAddress     m_peer_addr;

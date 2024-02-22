@@ -9,7 +9,7 @@
  * 
  */
 #pragma once
-#include <bbt/network/ICallback.hpp>
+#include <bbt/network/interface/ICallback.hpp>
 
 namespace bbt::network::interface
 {

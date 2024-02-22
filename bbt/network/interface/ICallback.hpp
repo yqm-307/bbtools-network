@@ -11,7 +11,7 @@
 #pragma once
 #include <stdio.h>
 
-namespace bbt::net::interface
+namespace bbt::network::interface
 {
 
 /**
@@ -31,7 +31,7 @@ public:
      * @return true 
      * @return false 
      */
-    virtual bool IsConnected() = 0;
+    virtual bool IsConnected() const = 0;
 
     /**
      * @brief 连接是否已经关闭
@@ -39,7 +39,7 @@ public:
      * @return true 
      * @return false 
      */
-    virtual bool IsClosed() = 0;
+    virtual bool IsClosed() const = 0;
 
     /**
      * @brief 主动关闭此连接 

@@ -9,8 +9,7 @@
  * 
  */
 #pragma once
-#include <event2/event.h>
-#include <functional>
+#include <bbt/network/Define.hpp>
 
 #include "EventBase.hpp"
 

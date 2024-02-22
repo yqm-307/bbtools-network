@@ -20,6 +20,9 @@
 
 #include <event2/event.h>
 
+#include <bbt/base/assert/Assert.hpp>
+#include <bbt/network/Errcode.hpp>
+
 namespace bbt::network
 {
 
