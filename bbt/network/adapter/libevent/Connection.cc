@@ -19,9 +19,10 @@ Connection::Connection(EventBase* base, evutil_socket_t socket, bbt::net::IPAddr
     m_io_context(base),
     m_callbacks(callbacks)
 {
-    // m_event = std::make_shared(base, socket, EV_CLOSED | EV_PERSIST | EV_READ | EV_WRITE, [](
+    m_event = std::make_shared<Event>(base, socket, EV_CLOSED | EV_PERSIST | EV_READ | EV_WRITE, 
+    [](evutil_socket_t socket, short events){
 
-    // ){});
+    });
 }
 
 Connection::~Connection()
