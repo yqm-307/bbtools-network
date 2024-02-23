@@ -17,6 +17,10 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <functional>
+#include <map>
+#include <vector>
+#include <memory>
 
 #include <event2/event.h>
 
@@ -34,8 +38,11 @@ enum ConnStatus
     DECONNECTED = 2,    // 断开连接
 };
 
+// 连接id
+typedef uint64_t ConnId;
+
 }
 
-#define FASTERR_ERROR(info) Errcode{info, ErrType::ERRTYPE_ERROR}
+#define FASTERR_ERROR(info) Errcode(info, ErrType::ERRTYPE_ERROR)
 
-#define FASTERR_NOTHING Errcode{"", ErrType::ERRTYPE_NOTHING}
+#define FASTERR_NOTHING Errcode("", ErrType::ERRTYPE_NOTHING)

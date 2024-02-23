@@ -15,8 +15,8 @@
 namespace bbt::network::interface
 {
 
-typedef std::function<void(Errcode, INetConnection*)> OnConnectCallback;
-typedef std::function<void(Errcode, INetConnection*)> OnAcceptCallback;
+typedef std::function<void(Errcode, INetConnectionSPtr)> OnConnectCallback;
+typedef std::function<void(Errcode, INetConnectionSPtr)> OnAcceptCallback;
 
 
 class INetwork
@@ -30,7 +30,7 @@ public:
      * @param port          对端端口
      * @return std::pair<Errcode, INetConnection*> 
      */
-    virtual std::pair<Errcode, INetConnection*> Connect(const char* ip, short port) = 0;
+    virtual std::pair<Errcode, INetConnectionSPtr> Connect(const char* ip, short port) = 0;
 
     /**
      * @brief 从listen_fd获取一个新的来自其他主机的连接，在获取到结果前
@@ -39,7 +39,7 @@ public:
      * @param listen_fd     监听套接字
      * @return std::pair<Errcode, INetConnection*> 
      */
-    virtual std::pair<Errcode, INetConnection*> Accept(int listen_fd) = 0;
+    virtual std::pair<Errcode, INetConnectionSPtr> Accept(int listen_fd) = 0;
 
     /**
      * @brief 与地址{ip:port}的主机建立连接，当连接完成时通过onconnect_cb

@@ -13,7 +13,7 @@
 namespace bbt::network::base
 {
 
-BaseConnection::BaseConnection(int socket, const bbt::net::IPAddress& addr)
+ConnectionBase::ConnectionBase(int socket, const bbt::net::IPAddress& addr)
     :m_socket_fd(socket),
     m_peer_addr(addr)
 {
@@ -22,7 +22,7 @@ BaseConnection::BaseConnection(int socket, const bbt::net::IPAddress& addr)
     m_conn_status = ConnStatus::CONNECTED;
 }
 
-BaseConnection::~BaseConnection()
+ConnectionBase::~ConnectionBase()
 {
     Close();
 
@@ -30,42 +30,42 @@ BaseConnection::~BaseConnection()
     m_socket_fd = -1;
 }
 
-bool BaseConnection::IsConnected() const
+bool ConnectionBase::IsConnected() const
 {
     return (m_conn_status == ConnStatus::CONNECTED);
 }
 
-bool BaseConnection::IsClosed() const
+bool ConnectionBase::IsClosed() const
 {
     return (m_conn_status == ConnStatus::DECONNECTED);
 }
 
-const bbt::net::IPAddress& BaseConnection::GetPeerAddress() const
+const bbt::net::IPAddress& ConnectionBase::GetPeerAddress() const
 {
     return m_peer_addr;
 }
 
-void BaseConnection::Close()
+void ConnectionBase::Close()
 {
     AssertWithInfo(false, "emply implementation!");
 }
 
-void BaseConnection::OnRecv(const char* data, size_t len)
+void ConnectionBase::OnRecv(const char* data, size_t len)
 {
     AssertWithInfo(false, "emply implementation!");
 }
 
-void BaseConnection::OnSend(size_t succ_len)
+void ConnectionBase::OnSend(const Errcode& err, size_t succ_len)
 {
     AssertWithInfo(false, "emply implementation!");
 }
 
-void BaseConnection::OnClose()
+void ConnectionBase::OnClose()
 {
     AssertWithInfo(false, "emply implementation!");
 }
 
-void BaseConnection::OnTimeout()
+void ConnectionBase::OnTimeout()
 {
     AssertWithInfo(false, "emply implementation!");
 }

@@ -9,31 +9,40 @@
  * 
  */
 #pragma once
+#include <bbt/base/templateutil/managerconn/ManagerBase.hpp>
+
 #include <bbt/network/interface/INetConnection.hpp>
-#include <bbt/network/Define.hpp>
 #include <bbt/base/net/IPAddress.hpp>
 
 
 namespace bbt::network::base
 {
 
+class ConnectionBase;
+class NetworkBase;
+typedef std::shared_ptr<ConnectionBase> BaseConnectionSPtr;
+typedef std::unique_ptr<ConnectionBase> BaseConnectionUQPtr;
+typedef std::weak_ptr<ConnectionBase>   BaseConnectionWKPtr;
 
 /**
  * @brief 基础的Connection类
  * 
  */
-class BaseConnection:
-    public bbt::network::interface::INetConnection
+class ConnectionBase:
+    public bbt::network::interface::INetConnection,
+    public bbt::templateutil::MemberBase<ConnId, ConnectionBase>
 {
+    friend class NetworkBase;
 public:
-    BaseConnection(int socket, const bbt::net::IPAddress& addr);
-    ~BaseConnection();
+
+    ConnectionBase(int socket, const bbt::net::IPAddress& addr);
+    ~ConnectionBase();
 
     virtual bool            IsConnected() const override final;
     virtual bool            IsClosed() const override final;
     virtual void            Close() override;
     virtual void            OnRecv(const char* data, size_t len) override;
-    virtual void            OnSend(size_t succ_len) override;
+    virtual void            OnSend(const Errcode& err, size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
     virtual const bbt::net::IPAddress& GetPeerAddress() const override final;

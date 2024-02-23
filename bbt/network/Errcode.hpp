@@ -25,7 +25,7 @@ class Errcode:
     public bbt::errcode::Errcode<ErrType>
 {
 public:
-    explicit Errcode(const std::string& info, ErrType type = ErrType::ERRTYPE_ERROR)
+    Errcode(const std::string& info, ErrType type = ErrType::ERRTYPE_ERROR)
         :bbt::errcode::Errcode<ErrType>(info, type)
     {
     }

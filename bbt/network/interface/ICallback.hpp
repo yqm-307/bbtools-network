@@ -10,6 +10,7 @@
  */
 #pragma once
 #include <stdio.h>
+#include <bbt/network/Define.hpp>
 
 namespace bbt::network::interface
 {
@@ -46,6 +47,8 @@ public:
      * 
      */
     virtual void Close() = 0;
+
+    virtual void OnError(const Errcode& error) = 0;
 };
 
 
@@ -83,7 +86,7 @@ public:
      * 
      * @param succ_len 成功发送的字节数 
      */
-    virtual void OnSend(size_t succ_len) = 0;
+    virtual void OnSend(const Errcode& err, size_t succ_len) = 0;
 
     /**
      * @brief 连接关闭事件
