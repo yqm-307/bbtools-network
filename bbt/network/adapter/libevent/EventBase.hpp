@@ -30,15 +30,4 @@ private:
     event_base* m_io_context{nullptr};
 };
 
-EventBase::EventBase()
-    :m_io_context(event_base_new())
-{
-    assert(m_io_context != nullptr);
-}
-
-EventBase::~EventBase()
-{
-    event_base_free(m_io_context);
-}
-
-}
+} // namespace bbt::network::libevent

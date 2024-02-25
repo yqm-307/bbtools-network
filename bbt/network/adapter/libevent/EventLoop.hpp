@@ -11,6 +11,7 @@
 #pragma once
 #include <bbt/network/Define.hpp>
 #include <bbt/network/adapter/libevent/Event.hpp>
+#include <bbt/base/Attribute.hpp>
 
 namespace bbt::network::libevent
 {
@@ -21,6 +22,7 @@ namespace bbt::network::libevent
  */
 enum EventLoopOpt
 {
+    LOOP_NORMAL             = 0,                /* 默认循环，没有事件退出 */
     LOOP_ONCE               = EVLOOP_ONCE,      /* 触发一次 */
     LOOP_NONBLOCK           = EVLOOP_NONBLOCK,  /* ??? */
     LOOP_NO_EXIT_ON_EMPTY   = EVLOOP_NO_EXIT_ON_EMPTY, /* 即使没有任何监听事件也不退出循环 */
@@ -45,14 +47,14 @@ public:
     EventLoop();
     ~EventLoop();
 
-    Errcode StartLoop(EventLoopOpt opt);
-    Errcode BreakLoop();
+    BBTATTR_FUNC_RetVal Errcode StartLoop(EventLoopOpt opt);
+    BBTATTR_FUNC_RetVal Errcode BreakLoop();
 
     std::shared_ptr<Event> CreateEvent(evutil_socket_t fd, EventOpt events, const OnEventCallback& onevent_cb);
 
 
 private:
-    std::shared_ptr<EventBase>  m_io_context{nullptr};
+    EventBase*  m_io_context{nullptr};
 };
 
 } // namespace bbt::network::libevent

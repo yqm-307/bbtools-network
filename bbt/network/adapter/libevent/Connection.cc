@@ -8,8 +8,7 @@
  * @copyright Copyright (c) 2024
  * 
  */
-// #include <bbt/network/adapter/libevent/Connection.hpp>
-#include <Connection.hpp>
+#include <bbt/network/adapter/libevent/Connection.hpp>
 
 namespace bbt::network::libevent
 {

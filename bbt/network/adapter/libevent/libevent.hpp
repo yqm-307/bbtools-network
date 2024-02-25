@@ -10,5 +10,3 @@
  */
 #pragma once
 #include <event2/event.h>
-
-#include <Event.hpp>

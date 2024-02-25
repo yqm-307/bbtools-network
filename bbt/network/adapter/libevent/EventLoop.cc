@@ -9,19 +9,21 @@
  * 
  */
 #include <bbt/network/adapter/libevent/EventLoop.hpp>
+#include <bbt/network/adapter/libevent/EventBase.hpp>
 
 namespace bbt::network::libevent
 {
 
 
 EventLoop::EventLoop()
-    :m_io_context(std::make_shared<EventBase>())
+    :m_io_context(new EventBase)
 {
 }
 
 EventLoop::~EventLoop()
 {
-
+    delete m_io_context;
+    m_io_context = nullptr;
 }
 
 Errcode EventLoop::StartLoop(EventLoopOpt opt)
@@ -50,7 +52,7 @@ Errcode EventLoop::BreakLoop()
 
 std::shared_ptr<Event> EventLoop::CreateEvent(evutil_socket_t fd, EventOpt events, const OnEventCallback& onevent_cb)
 {
-    auto event_sptr = std::make_shared<Event>(m_io_context->m_io_context, fd, events, onevent_cb);
+    auto event_sptr = std::make_shared<Event>(m_io_context, fd, events, onevent_cb);
     return event_sptr;
 }
 

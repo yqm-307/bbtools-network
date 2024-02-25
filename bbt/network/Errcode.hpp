@@ -33,12 +33,12 @@ public:
     {
     }
 
-    explicit Errcode(const Errcode& err)
+    Errcode(const Errcode& err)
         :bbt::errcode::Errcode<ErrType>(err)
     {
     }
     
-    explicit Errcode(Errcode&& err)
+    Errcode(Errcode&& err)
         :bbt::errcode::Errcode<ErrType>(err)
     {
     }
