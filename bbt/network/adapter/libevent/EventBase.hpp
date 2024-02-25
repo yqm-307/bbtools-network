@@ -20,7 +20,7 @@ namespace bbt::network::libevent
 class EventBase
 {
     friend class Event;
-
+    friend class EventLoop;
 public:
     EventBase();
     ~EventBase();

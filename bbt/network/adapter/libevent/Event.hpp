@@ -31,13 +31,19 @@ public:
     ~Event();
 
     /**
-     * @brief 注册事件
+     * @brief 开始监听事件
      * 
      * @param timeout 超时时间，单位ms
      * @return Errcode
      */
-    Errcode Regist(uint32_t timeout);
-    Errcode UnRegist();
+    Errcode StartListen(uint32_t timeout);
+
+    /**
+     * @brief 取消对此事件的监听
+     * 
+     * @return Errcode 
+     */
+    Errcode CancelListen();
 private:
     event*                  m_raw_event;                    /* 包装的libevent事件句柄 */
     COnEventWapperParam*    m_c_func_wapper_param{nullptr}; /* cfunc转发到std::function包装器 */
@@ -72,7 +78,7 @@ Event::~Event()
     m_c_func_wapper_param = nullptr;
 }
 
-Errcode Event::Regist(uint32_t timeout)
+Errcode Event::StartListen(uint32_t timeout)
 {
     timeval     tm;
     int         err;
@@ -92,7 +98,7 @@ Errcode Event::Regist(uint32_t timeout)
     return FASTERR_NOTHING;
 }
 
-Errcode Event::UnRegist()
+Errcode Event::CancelListen()
 {
     int         err;
 

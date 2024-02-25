@@ -19,6 +19,9 @@ enum ErrType
 {
     ERRTYPE_NOTHING = 0,    // 没有问题
     ERRTYPE_ERROR = 1,      // 错误
+
+    ERRTPYE_EVENTLOOP_LOOP_ERR_EXIT             = 100,          // 因为错误退出循环
+    ERRTYPE_EVENTLOOP_LOOP_EXIT                 = 101,          // 退出循环
 };
 
 class Errcode:
