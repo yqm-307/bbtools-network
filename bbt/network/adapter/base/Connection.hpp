@@ -46,6 +46,7 @@ public:
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
     virtual const bbt::net::IPAddress& GetPeerAddress() const override final;
+    virtual evutil_socket_t GetSocket() const final;
 private:
     int                     m_socket_fd{-1};
     bbt::net::IPAddress     m_peer_addr;

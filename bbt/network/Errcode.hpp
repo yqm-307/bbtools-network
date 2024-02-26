@@ -22,6 +22,11 @@ enum ErrType
 
     ERRTPYE_EVENTLOOP_LOOP_ERR_EXIT             = 100,          // 因为错误退出循环
     ERRTYPE_EVENTLOOP_LOOP_EXIT                 = 101,          // 退出循环
+
+    ERRTYPE_NETWORK_RECV_TRY_AGAIN              = 201,          // 未准备好，请尝试
+    ERRTYPE_NETWORK_RECV_CONNREFUSED            = 202,          // 连接被服务器拒绝
+    ERRTYPE_NETWORK_RECV_EOF                    = 203,          // 连接关闭
+    ERRTYPE_NETWORK_RECV_OTHER_ERR              = 204,
 };
 
 class Errcode:
@@ -46,9 +51,20 @@ public:
     operator bool()
     { return (Type() == ErrType::ERRTYPE_NOTHING); }    
 
-    ErrType Type() { return GetErrType(); }
-    const std::string& What() { return GetMsg(); }
-    const char* CWhat() { return GetCMsg(); }
+    ErrType     Type()
+    { return GetErrType(); }
+    
+    const std::string& What()
+    { return GetMsg(); }
+
+    const char* CWhat()
+    { return GetCMsg(); }
+
+    void        SetInfo(const std::string& info)
+    { SetMsg(info); }
+
+    void        SetType(ErrType type)
+    { SetErrType(type); }
 };
 
 }

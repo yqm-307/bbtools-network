@@ -27,8 +27,10 @@ Event::Event(EventBase* base, evutil_socket_t fd, short listen_events, const OnE
 
 Event::~Event()
 {
-    //XXX 反注册事件
+    auto err = CancelListen();
+    DebugAssertWithInfo(err, "it`s a wrong!");
     event_free(m_raw_event);
+
     m_raw_event = nullptr;
 }
 

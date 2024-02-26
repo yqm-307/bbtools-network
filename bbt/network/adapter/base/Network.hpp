@@ -35,6 +35,12 @@ public:
     virtual Errcode AsyncAccept(int listen_fd, const interface::OnAcceptCallback& onaccept_cb) override;
 
     virtual BaseConnectionSPtr GetConnById(ConnId conn_id) final;
+
+    virtual bool        OnMemberCreate(MemberPtr member) final;
+
+    virtual bool        OnMemberDestory(KeyType member) final;
+
+    virtual KeyType     GenerateKey(MemberPtr) final;
 protected:
     std::map<ConnId, BaseConnectionWKPtr> m_conns_map;  // 所有的连接
 };

@@ -28,19 +28,6 @@ enum EventLoopOpt
     LOOP_NO_EXIT_ON_EMPTY   = EVLOOP_NO_EXIT_ON_EMPTY, /* 即使没有任何监听事件也不退出循环 */
 };
 
-/**
- * @brief 监听事件的事件类型
- * 
- */
-enum EventOpt : short
-{
-    TIMEOUT                 = EV_TIMEOUT,       // 事件超时时触发
-    READABLE                = EV_READ,          // 套接字可读时触发
-    WRITEABLE               = EV_WRITE,         // 套接字可写时触发
-    FD_CLOSE                = EV_CLOSED,        // 套接字关闭时触发
-    PERSIST                 = EV_PERSIST,       // 设置事件监听事件为持续监听的，否则触发一次事件就结束
-};
-
 class EventLoop
 {
 public:
@@ -50,7 +37,7 @@ public:
     BBTATTR_FUNC_RetVal Errcode StartLoop(EventLoopOpt opt);
     BBTATTR_FUNC_RetVal Errcode BreakLoop();
 
-    std::shared_ptr<Event> CreateEvent(evutil_socket_t fd, EventOpt events, const OnEventCallback& onevent_cb);
+    std::shared_ptr<Event> CreateEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
 
 
 private:

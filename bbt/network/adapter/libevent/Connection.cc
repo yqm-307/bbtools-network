@@ -8,19 +8,21 @@
  * @copyright Copyright (c) 2024
  * 
  */
+#include <string>
+#include <bbt/base/buffer/Buffer.hpp>
+#include <bbt/base/Logger/Logger.hpp>
 #include <bbt/network/adapter/libevent/Connection.hpp>
 
 namespace bbt::network::libevent
 {
 
-Connection::Connection(EventBase* base, evutil_socket_t socket, bbt::net::IPAddress& ipaddr, const ConnCallbacks& callbacks)
+Connection::Connection(EventLoop* loop, evutil_socket_t socket, bbt::net::IPAddress& ipaddr)
     :ConnectionBase(socket, ipaddr),
-    m_io_context(base),
-    m_callbacks(callbacks)
+    m_io_context(loop)
 {
-    m_event = std::make_shared<Event>(base, socket, EV_CLOSED | EV_PERSIST | EV_READ | EV_WRITE, 
-    [](evutil_socket_t socket, short events){
-
+    loop->CreateEvent(socket, EV_CLOSED | EV_PERSIST | EV_READ, 
+    [this](evutil_socket_t socket, short events){
+        OnEvent(socket, events);
     });
 }
 
@@ -83,5 +85,127 @@ void Connection::UnRegistEvent()
     // 2、释放内存
 }
 
+void Connection::SetCallbacks(const libevent::ConnCallbacks& cb)
+{
+    
+}
+
+void Connection::OnEvent(evutil_socket_t sockfd, short event)
+{
+    if (sockfd & EventOpt::READABLE) {
+        auto err = Recv(sockfd);
+        if (!err) OnError(err);
+    // } else if (sockfd & EventOpt::WRITEABLE) {
+        // OnSend();
+    } else if (sockfd & EventOpt::TIMEOUT) {
+        OnTimeout();
+    } else if (sockfd & EventOpt::FD_CLOSE) {
+        OnClose();
+    }
+}
+
+Errcode Connection::Recv(evutil_socket_t sockfd)
+{
+    int                 err          = 0;
+    int                 read_len     = 0;
+    bbt::buffer::Buffer buffer;
+    char*               buffer_begin = buffer.Peek();
+    size_t              buffer_len   = buffer.WriteableBytes();
+    Errcode             errcode{"nothing", ErrType::ERRTYPE_NOTHING};
+
+    if (IsClosed()) {
+        return FASTERR_ERROR("conn is closed, but event was not cancel! peer:" + GetPeerAddress().GetIPPort());
+    }
+
+    read_len = ::read(sockfd, buffer_begin, buffer_len);
+    buffer.WriteNull(read_len);
+
+    if (read_len == -1) {
+        if (errno == EINTR || errno == EAGAIN) {
+            errcode.SetInfo("please try again!");
+            errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_TRY_AGAIN);
+        } else if (errno == ECONNREFUSED) {
+            errcode.SetInfo("connect refused!");
+            errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_CONNREFUSED);
+        }
+    } else if (read_len == 0) {
+        errcode.SetInfo("peer connect closed!");
+        errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_EOF);
+    } else if (read_len < -1) {
+        errcode.SetInfo("other error! please debug!");
+        errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_OTHER_ERR);
+    }
+
+    if (!errcode)
+        return errcode;
+
+    OnRecv(buffer_begin, buffer_len);
+}
+
+size_t Connection::Send(const char* buf, size_t len)
+{
+    int remain = len;
+    while (remain > 0) {
+        int n = ::write(GetSocket(), (buf + (len - remain)), remain);
+        if (n < 0) {
+            if (errno == EPIPE) {
+                Close();
+                return -1;
+            }
+            remain -= n;
+        }
+    }
+
+    return (len - remain);
+}
+
+int Connection::AsyncSend(const char* buf, size_t len)
+{
+    if (!IsConnected()) {
+        std::string info = bbt::log::format("send error! connection is disconnect! sockfd=%d, status=%d", GetSocket(), IsConnected() ? 1 : 0);
+        OnError(FASTERR_ERROR(info));
+        return -1;
+    }
+
+    bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
+    if (m_output_buffer_is_free) {
+        AsyncSendInThread();
+    }
+}
+int Connection::AsyncSendInThread()
+{
+    bbt::buffer::Buffer buffer;
+    m_output_buffer.Swap(buffer);
+
+    size_t m_output_prev_size = buffer.DataSize();
+
+    // auto io_ctx = m_io_thread.lock();
+    // if(io_ctx == nullptr) {
+    //     GAME_EXT1_LOG_ERROR("io thread not existed! sockfd=%d, connid=%d", GetSocket(), GetMemberId());
+    //     return -1;
+    // }
+
+    auto weak_this = weak_from_this();
+    auto connid = GetMemberId();
+    
+    m_send_event = evEvent::Create([weak_this, connid, buffer](evutil_socket_t fd, short events, void* args){
+        auto share_this = std::static_pointer_cast<evConnection>(weak_this.lock());
+        if(share_this == nullptr) {
+            GAME_EXT1_LOG_ERROR("connection is destory, event can`t exec! sockfd=%d, connid=%d", fd, connid);
+            return;
+        }
+
+        share_this->Send(buffer);
+        share_this->OnSend(fd, events, args);
+    }, GetSocket(), EV_WRITE, 5000);
+
+    m_output_buffer_is_free = false;
+
+    return io_ctx->RegisterEventSafe(m_send_event);
+}
+Errcode Connection::Timeout()
+{
+
+}
 
 } // namespace bbt::network::libevent

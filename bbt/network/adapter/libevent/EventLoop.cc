@@ -50,7 +50,7 @@ Errcode EventLoop::BreakLoop()
     return FASTERR_NOTHING;
 }
 
-std::shared_ptr<Event> EventLoop::CreateEvent(evutil_socket_t fd, EventOpt events, const OnEventCallback& onevent_cb)
+std::shared_ptr<Event> EventLoop::CreateEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb)
 {
     auto event_sptr = std::make_shared<Event>(m_io_context, fd, events, onevent_cb);
     return event_sptr;

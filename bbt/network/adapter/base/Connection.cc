@@ -70,4 +70,9 @@ void ConnectionBase::OnTimeout()
     AssertWithInfo(false, "emply implementation!");
 }
 
+evutil_socket_t ConnectionBase::GetSocket() const
+{
+    return m_socket_fd;
+}
+
 }

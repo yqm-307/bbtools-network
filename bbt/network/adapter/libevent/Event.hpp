@@ -17,6 +17,19 @@ namespace bbt::network::libevent
 {
 
 /**
+ * @brief 监听事件的事件类型
+ * 
+ */
+enum EventOpt : short
+{
+    TIMEOUT                 = EV_TIMEOUT,       // 事件超时时触发
+    READABLE                = EV_READ,          // 套接字可读时触发
+    WRITEABLE               = EV_WRITE,         // 套接字可写时触发
+    FD_CLOSE                = EV_CLOSED,        // 套接字关闭时触发
+    PERSIST                 = EV_PERSIST,       // 设置事件监听事件为持续监听的，否则触发一次事件就结束
+};
+
+/**
  * @brief 封装libevent的事件触发函数，当有关注的事件发生时通过此函数
  * 回调通知到关注者
  */
@@ -44,6 +57,7 @@ public:
      * @return Errcode 
      */
     Errcode CancelListen();
+
 private:
     event*                          m_raw_event;                    /* 包装的libevent事件句柄 */
     COnEventWapperParam             m_c_func_wapper_param; /* cfunc转发到std::function包装器 */
