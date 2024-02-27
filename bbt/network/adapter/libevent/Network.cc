@@ -13,9 +13,10 @@
 namespace bbt::network::libevent
 {
 
-Network::Network(EventBase* io_context, const char* ip, short port)
+Network::Network(EventBase* io_context, uint32_t sub_thread_num, const char* ip, short port)
     :m_listen_addr(ip, port),
-    m_io_context(io_context)
+    m_io_context(io_context),
+    m_sub_loop_nums(sub_thread_num)
 {
     AssertWithInfo(m_io_context != nullptr, "io_context can`t NULL!");
 }

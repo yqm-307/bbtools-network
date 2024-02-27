@@ -23,7 +23,7 @@ class Network:
     bbt::network::base::NetworkBase
 {
 public:
-    Network(EventBase* io_context, const char* ip, short port);
+    Network(EventBase* io_context, uint32_t sub_thread_num, const char* ip, short port);
     virtual ~Network();
 
     virtual std::pair<Errcode, interface::INetConnectionSPtr>
@@ -54,6 +54,7 @@ private:
     OnErrorCallback                 m_error_handle{nullptr};
 
     ConnCallbacks                   m_conn_init_callbacks;      // 连接的io回调函数
+    const int                       m_sub_loop_nums{1};         // 子（IO）线程数        
 };
 
 } // namespace bbt::network::libevent
