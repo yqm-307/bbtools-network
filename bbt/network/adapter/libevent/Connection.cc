@@ -18,7 +18,7 @@ namespace bbt::network::libevent
 
 Connection::Connection(EventLoop* loop, evutil_socket_t socket, bbt::net::IPAddress& ipaddr)
     :ConnectionBase(socket, ipaddr),
-    m_io_context(loop)
+    m_eventloop(loop)
 {
     loop->CreateEvent(socket, EV_CLOSED | EV_PERSIST | EV_READ, 
     [this](evutil_socket_t socket, short events){
@@ -161,6 +161,11 @@ size_t Connection::Send(const char* buf, size_t len)
 
 int Connection::AsyncSend(const char* buf, size_t len)
 {
+    /**
+     *  异步发送数据
+     *  （1）当有正在发送中的数据，则将数据追加到输出缓存中
+     *  （2）当没有发送中的数据，则触发一次发送数据
+     */
     if (!IsConnected()) {
         std::string info = bbt::log::format("send error! connection is disconnect! sockfd=%d, status=%d", GetSocket(), IsConnected() ? 1 : 0);
         OnError(FASTERR_ERROR(info));
@@ -168,41 +173,64 @@ int Connection::AsyncSend(const char* buf, size_t len)
     }
 
     bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
-    if (m_output_buffer_is_free) {
-        AsyncSendInThread();
+
+    if (!m_output_buffer_is_free) {
+        int append_len = AppendOutputBuffer(buf, len);
+        if (append_len != len) {
+            return -1;
+        }
     }
+
+    AsyncSendInThread();
+    return 0;
 }
+
 int Connection::AsyncSendInThread()
 {
+    /**
+     *  每次发送结束后，回检测一下输出缓存是否会有数据。
+     *  如果有再次注册一个send事件
+     */
     bbt::buffer::Buffer buffer;
     m_output_buffer.Swap(buffer);
 
     size_t m_output_prev_size = buffer.DataSize();
 
-    // auto io_ctx = m_io_thread.lock();
-    // if(io_ctx == nullptr) {
-    //     GAME_EXT1_LOG_ERROR("io thread not existed! sockfd=%d, connid=%d", GetSocket(), GetMemberId());
-    //     return -1;
-    // }
-
     auto weak_this = weak_from_this();
     auto connid = GetMemberId();
-    
-    m_send_event = evEvent::Create([weak_this, connid, buffer](evutil_socket_t fd, short events, void* args){
-        auto share_this = std::static_pointer_cast<evConnection>(weak_this.lock());
-        if(share_this == nullptr) {
-            GAME_EXT1_LOG_ERROR("connection is destory, event can`t exec! sockfd=%d, connid=%d", fd, connid);
-            return;
+    m_send_event = m_eventloop->CreateEvent(GetSocket(), EV_WRITE,
+    [this, buffer](evutil_socket_t fd, short events){
+        Errcode     err{"", ErrType::ERRTYPE_NOTHING};
+        int         size = 0;
+
+        size = Send(buffer.Peek(), buffer.DataSize());
+
+        if (events & EventOpt::TIMEOUT) {
+            err.SetType(ErrType::ERRTYPE_SEND_TIMEOUT);
+            err.SetInfo("send timeout!");
+        } else if (!(events & EventOpt::WRITEABLE)) {
+            err.SetType(ErrType::ERRTYPE_ERROR);
+            err.SetInfo("invalid event!");
         }
 
-        share_this->Send(buffer);
-        share_this->OnSend(fd, events, args);
-    }, GetSocket(), EV_WRITE, 5000);
+        OnSend(err, size);
+
+        bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
+        DebugAssert(!m_output_buffer_is_free);
+
+        if (m_output_buffer.DataSize() > 0)
+            AsyncSendInThread();
+        else
+            m_output_buffer_is_free = true;
+    });
 
     m_output_buffer_is_free = false;
 
-    return io_ctx->RegisterEventSafe(m_send_event);
+    m_send_event->StartListen(5000);
+    return ;
 }
+
+
 Errcode Connection::Timeout()
 {
 

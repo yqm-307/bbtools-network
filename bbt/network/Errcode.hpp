@@ -26,7 +26,9 @@ enum ErrType
     ERRTYPE_NETWORK_RECV_TRY_AGAIN              = 201,          // 未准备好，请尝试
     ERRTYPE_NETWORK_RECV_CONNREFUSED            = 202,          // 连接被服务器拒绝
     ERRTYPE_NETWORK_RECV_EOF                    = 203,          // 连接关闭
-    ERRTYPE_NETWORK_RECV_OTHER_ERR              = 204,
+    ERRTYPE_NETWORK_RECV_OTHER_ERR              = 204,          // 其他错误
+
+    ERRTYPE_SEND_TIMEOUT                        = 301,          // 发送超时
 };
 
 class Errcode:

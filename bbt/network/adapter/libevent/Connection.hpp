@@ -77,12 +77,17 @@ protected:
     virtual void            OnError(const Errcode& err) override;
 
     int                     AsyncSendInThread();
+    int                     AppendOutputBuffer(const char* data, size_t len);
 private:
     std::shared_ptr<EventLoop>
-                            m_io_context{nullptr};      // io 上下文
+                            m_eventloop{nullptr};       // io 上下文
     ConnCallbacks           m_callbacks;                // 回调函数
     std::shared_ptr<Event>  m_event{nullptr};           // 事件
+    std::shared_ptr<Event>  m_send_event{nullptr};      // 发送事件
 
+    /**
+     * 异步写需要做输出缓存，这里策略是无限扩张的输出缓存。
+     */
     bbt::buffer::Buffer     m_input_buffer;
     bbt::buffer::Buffer     m_output_buffer;
     bool                    m_output_buffer_is_free{true};

@@ -43,7 +43,7 @@ public:
      * @return EventId 如果成功返回事件id，失败返回-1
      */
     // EventId RegisterEvent(std::shared_ptr<evEvent> event_ptr);
-    std::shared_ptr<Event> RegisterEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
+    std::shared_ptr<Event>  RegisterEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
 
     /**
      * @brief 与 RegisterEvent 相比为线程安全版本
@@ -54,7 +54,7 @@ public:
      * @param args callback的参数（大部分情况使用函数对象即可）
      * @return int 成功返回大于等于0的eventid，失败返回-1
      */
-    std::shared_ptr<Event> RegisterEventSafe(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
+    std::shared_ptr<Event>  RegisterEventSafe(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
 
 private:
     virtual void            WorkHandle() override;
@@ -63,7 +63,6 @@ private:
     /* 回收线程内部资源 */
     void                    Destory();
     void                    evWorkFunc();
-
 
 protected:
     std::shared_ptr<EventLoop>  m_eventloop{nullptr};
