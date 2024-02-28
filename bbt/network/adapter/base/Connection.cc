@@ -26,8 +26,16 @@ ConnectionBase::~ConnectionBase()
 {
     Close();
 
+    if (m_socket_fd < 0)
+        return;
+
     ::close(m_socket_fd);
     m_socket_fd = -1;
+}
+
+ConnId ConnectionBase::GetConnId() const
+{
+    return GetMemberId();
 }
 
 bool ConnectionBase::IsConnected() const
@@ -48,6 +56,21 @@ const bbt::net::IPAddress& ConnectionBase::GetPeerAddress() const
 void ConnectionBase::Close()
 {
     AssertWithInfo(false, "emply implementation!");
+}
+
+void ConnectionBase::CloseSocket()
+{
+    if (m_socket_fd < 0)
+        return;
+
+    ::close(m_socket_fd);
+    m_socket_fd = -1;
+}
+
+void ConnectionBase::SetStatus(ConnStatus status)
+{
+    AssertWithInfo(status >= m_conn_status, "status can`t rollback!");  // 连接状态不允许回退
+    m_conn_status = status;
 }
 
 void ConnectionBase::OnRecv(const char* data, size_t len)

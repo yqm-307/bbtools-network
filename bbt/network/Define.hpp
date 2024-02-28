@@ -30,6 +30,13 @@
 namespace bbt::network
 {
 
+// 空闲断开连接时间
+#define CONNECTION_FREE_TIMEOUT_MS 5000
+// 发送超时失败
+#define SEND_DATA_TIMEOUT_MS 2000
+// 连接超时
+#define CONNECT_TIMEOUT_MS 5000
+
 // 连接状态枚举
 enum ConnStatus
 {

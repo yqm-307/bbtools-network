@@ -56,6 +56,8 @@ public:
      */
     std::shared_ptr<Event>  RegisterEventSafe(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
 
+    const std::unique_ptr<EventLoop>& GetEventLoop() const;
+
 private:
     virtual void            WorkHandle() override;
     /* 初始化线程内部资源 */
@@ -65,7 +67,7 @@ private:
     void                    evWorkFunc();
 
 protected:
-    std::shared_ptr<EventLoop>  m_eventloop{nullptr};
+    std::unique_ptr<EventLoop>  m_eventloop{nullptr};
     std::mutex                  m_mutex;
 };
 

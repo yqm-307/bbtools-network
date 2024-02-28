@@ -69,7 +69,9 @@
         "iomanip": "cpp",
         "cfenv": "cpp",
         "typeindex": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "any": "cpp",
+        "unordered_set": "cpp"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/g++"
 }

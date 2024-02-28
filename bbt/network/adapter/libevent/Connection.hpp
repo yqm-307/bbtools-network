@@ -14,12 +14,12 @@
 #include <bbt/network/Define.hpp>
 #include <bbt/network/adapter/base/Connection.hpp>
 #include <bbt/network/adapter/libevent/EventLoop.hpp>
+#include <bbt/network/adapter/libevent/IOThread.hpp>
 
 namespace bbt::network::libevent
 {
 
 class Connection;
-class Network;
 typedef std::shared_ptr<Connection> ConnectionSPtr;
 
 
@@ -43,26 +43,32 @@ class Connection:
     public base::ConnectionBase,
     public std::enable_shared_from_this<Connection>
 {
-    friend class Network;
+    friend class bbt::templateutil::ManagerBase<ConnId, ConnectionBase>;
 public:
     virtual ~Connection();
 
+
+    /* 设置Connection的回调行为 */
+    void                    SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks);
+
+    /* 设置空闲超时关闭Connection的时间 */
+    void                    SetOpt_CloseTimeoutMS(int timeout_ms);
+
+    /* 异步发送数据给对端 */
+    int                     AsyncSend(const char* buf, size_t len);
+
     /* 关闭此连接 */
     virtual void            Close() override;
+
+    /* 启动Connection */
+    void                    RunInEventLoop();
+
 private:
     Connection(
-        EventLoop*              eventloop,
+        std::shared_ptr<libevent::IOThread> thread,
         evutil_socket_t         socket,
         bbt::net::IPAddress&    ipaddr
     );
-
-
-    /* 在libevent中注册事件 */
-    void                    RegistEvent();
-    /* 在libevent中注销事件 */
-    void                    UnRegistEvent();
-    void                    SetCallbacks(const libevent::ConnCallbacks& cb);
-    int                     AsyncSend(const char* buf, size_t len);
 protected:
     void                    OnEvent(evutil_socket_t sockfd, short events);
 
@@ -79,11 +85,14 @@ protected:
     int                     AsyncSendInThread();
     int                     AppendOutputBuffer(const char* data, size_t len);
 private:
-    std::shared_ptr<EventLoop>
-                            m_eventloop{nullptr};       // io 上下文
+    std::shared_ptr<libevent::IOThread>
+                            m_current_thread{nullptr};
+    // std::shared_ptr<EventLoop>
+    //                         m_eventloop{nullptr};       // io 上下文
     ConnCallbacks           m_callbacks;                // 回调函数
     std::shared_ptr<Event>  m_event{nullptr};           // 事件
     std::shared_ptr<Event>  m_send_event{nullptr};      // 发送事件
+    uint64_t                m_conn_last_active_timestamp{0}; // 连接最后一次活跃（发送、接收）的时间戳
 
     /**
      * 异步写需要做输出缓存，这里策略是无限扩张的输出缓存。
@@ -91,7 +100,10 @@ private:
     bbt::buffer::Buffer     m_input_buffer;
     bbt::buffer::Buffer     m_output_buffer;
     bool                    m_output_buffer_is_free{true};
-    bbt::thread::lock::Mutex    m_output_mutex;
+    bbt::thread::lock::Mutex
+                            m_output_mutex;
+
+    int                     m_timeout_ms{CONNECTION_FREE_TIMEOUT_MS};           // 连接空闲超时事件
     
 };
 

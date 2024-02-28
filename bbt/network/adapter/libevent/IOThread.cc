@@ -16,7 +16,7 @@ namespace bbt::network::libevent
 {
 
 IOThread::IOThread()
-    :m_eventloop(std::make_shared<EventLoop>())
+    :m_eventloop(std::make_unique<EventLoop>())
 {
     Init();
 }
@@ -48,6 +48,11 @@ void IOThread::evWorkFunc()
 void IOThread::WorkHandle()
 {
     m_eventloop->StartLoop(EventLoopOpt::LOOP_NO_EXIT_ON_EMPTY);
+}
+
+const std::unique_ptr<EventLoop>& IOThread::GetEventLoop() const
+{
+    return m_eventloop;
 }
 
 Errcode IOThread::Stop()

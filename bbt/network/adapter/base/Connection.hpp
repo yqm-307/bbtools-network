@@ -14,6 +14,10 @@
 #include <bbt/network/interface/INetConnection.hpp>
 #include <bbt/base/net/IPAddress.hpp>
 
+namespace bbt::network::libevent
+{
+    class Network;
+}
 
 namespace bbt::network::base
 {
@@ -33,6 +37,7 @@ class ConnectionBase:
     public bbt::templateutil::MemberBase<ConnId, ConnectionBase>
 {
     friend class NetworkBase;
+    friend class libevent::Network;
 public:
 
     ConnectionBase(int socket, const bbt::net::IPAddress& addr);
@@ -47,6 +52,10 @@ public:
     virtual void            OnTimeout() override;
     virtual const bbt::net::IPAddress& GetPeerAddress() const override final;
     virtual evutil_socket_t GetSocket() const final;
+    virtual ConnId          GetConnId() const override final;
+protected:
+    virtual void            CloseSocket() final; 
+    virtual void            SetStatus(ConnStatus status) final;
 private:
     int                     m_socket_fd{-1};
     bbt::net::IPAddress     m_peer_addr;

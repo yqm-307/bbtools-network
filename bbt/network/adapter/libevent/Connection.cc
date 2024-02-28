@@ -11,30 +11,42 @@
 #include <string>
 #include <bbt/base/buffer/Buffer.hpp>
 #include <bbt/base/Logger/Logger.hpp>
+#include <bbt/base/timer/Clock.hpp>
 #include <bbt/network/adapter/libevent/Connection.hpp>
 
 namespace bbt::network::libevent
 {
 
-Connection::Connection(EventLoop* loop, evutil_socket_t socket, bbt::net::IPAddress& ipaddr)
+Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, bbt::net::IPAddress& ipaddr)
     :ConnectionBase(socket, ipaddr),
-    m_eventloop(loop)
+    m_current_thread(thread),
+    m_conn_last_active_timestamp(bbt::timer::clock::now().time_since_epoch().count())
 {
-    loop->CreateEvent(socket, EV_CLOSED | EV_PERSIST | EV_READ, 
-    [this](evutil_socket_t socket, short events){
-        OnEvent(socket, events);
-    });
 }
 
 Connection::~Connection()
 {
 }
 
+void Connection::SetOpt_CloseTimeoutMS(int timeout_ms)
+{
+    AssertWithInfo(timeout_ms > 0, "timeout can`t less then 0!");
+    m_timeout_ms = timeout_ms;
+}
+
+void Connection::SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks)
+{
+    m_callbacks = callbacks;
+}
+
+
 void Connection::OnRecv(const char* data, size_t len)
 {
     if (m_callbacks.on_recv_callback) {
         m_callbacks.on_recv_callback(shared_from_this(), data, len);
     }
+
+    OnError(Errcode{"on recv!, but no recv callback!"});
 }
 
 void Connection::OnSend(const Errcode& err, size_t succ_len)
@@ -42,6 +54,8 @@ void Connection::OnSend(const Errcode& err, size_t succ_len)
     if (m_callbacks.on_send_callback) {
         m_callbacks.on_send_callback(err, succ_len);
     }
+
+    OnError(Errcode{"on send!, but no send callback!"});
 }
 
 void Connection::OnClose()
@@ -49,6 +63,8 @@ void Connection::OnClose()
     if (m_callbacks.on_close_callback) {
         m_callbacks.on_close_callback();
     }
+
+    OnError(Errcode{"on closed!, but no close callback!"});
 }
 
 void Connection::OnTimeout()
@@ -56,6 +72,7 @@ void Connection::OnTimeout()
     if (m_callbacks.on_timeout_callback) {
         m_callbacks.on_timeout_callback();
     }
+    OnError(Errcode{"on timeout!, but no timeout callback!"});
 }
 
 void Connection::OnError(const Errcode& err)
@@ -67,27 +84,22 @@ void Connection::OnError(const Errcode& err)
 
 void Connection::Close()
 {
-    // 1、反注册事件
-    // 2、关闭连接
-    // 3、释放资源
-}
-
-void Connection::RegistEvent()
-{
-    // 1、申请内存
-    // 2、初始化事件
-    // 3、注册事件
-}
-
-void Connection::UnRegistEvent()
-{
-    // 1、注销事件
-    // 2、释放内存
-}
-
-void Connection::SetCallbacks(const libevent::ConnCallbacks& cb)
-{
+    auto err = m_event->CancelListen();
+    if (!err) OnError(err);
     
+    CloseSocket();
+
+    SetStatus(ConnStatus::DECONNECTED);
+}
+
+void Connection::RunInEventLoop()
+{
+    m_event = m_current_thread->RegisterEventSafe(GetSocket(), EV_CLOSED | EV_PERSIST | EV_READ, 
+    [this](evutil_socket_t socket, short events){
+        OnEvent(socket, events);
+    });
+
+    m_event->StartListen(m_timeout_ms);
 }
 
 void Connection::OnEvent(evutil_socket_t sockfd, short event)
@@ -185,6 +197,17 @@ int Connection::AsyncSend(const char* buf, size_t len)
     return 0;
 }
 
+int Connection::AppendOutputBuffer(const char* data, size_t len)
+{
+    auto before_size = m_output_buffer.DataSize();
+    m_output_buffer.WriteString(data, len);
+    auto after_size = m_output_buffer.DataSize();
+
+    int change_num = after_size - before_size;
+
+    return change_num > 0 ? change_num : 0;
+}
+
 int Connection::AsyncSendInThread()
 {
     /**
@@ -198,7 +221,7 @@ int Connection::AsyncSendInThread()
 
     auto weak_this = weak_from_this();
     auto connid = GetMemberId();
-    m_send_event = m_eventloop->CreateEvent(GetSocket(), EV_WRITE,
+    m_send_event = m_current_thread->RegisterEventSafe(GetSocket(), EV_WRITE,
     [this, buffer](evutil_socket_t fd, short events){
         Errcode     err{"", ErrType::ERRTYPE_NOTHING};
         int         size = 0;
@@ -225,9 +248,8 @@ int Connection::AsyncSendInThread()
     });
 
     m_output_buffer_is_free = false;
-
-    m_send_event->StartListen(5000);
-    return ;
+    m_send_event->StartListen(SEND_DATA_TIMEOUT_MS);
+    return 0;
 }
 
 

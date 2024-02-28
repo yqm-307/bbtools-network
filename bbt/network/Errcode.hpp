@@ -29,6 +29,11 @@ enum ErrType
     ERRTYPE_NETWORK_RECV_OTHER_ERR              = 204,          // 其他错误
 
     ERRTYPE_SEND_TIMEOUT                        = 301,          // 发送超时
+
+    ERRTYPE_CONNECT_TIMEOUT                     = 401,          // 连接对端超时
+    ERRTYPE_CONNECT_CONNREFUSED                 = 402,          // 连接被拒绝
+    ERRTYPE_CONNECT_SUCCESS                     = 403,          // 连接成功
+    ERRTYPE_CONNECT_TRY_AGAIN                   = 404,          // 忙，请稍后重试
 };
 
 class Errcode:
