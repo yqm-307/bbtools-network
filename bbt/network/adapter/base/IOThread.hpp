@@ -45,7 +45,6 @@ namespace base
 class IOThread
 {
 public:
-    typedef std::function<void()> WorkCallback;
     typedef std::function<void(IOThreadID)> HookCallback;
 
     /**
@@ -82,9 +81,6 @@ protected:
     
     /* 线程运行结束之后的 hook 函数 */
     void SetOnThreadEnd_Hook(const HookCallback& cb);
-    
-    /* 设置工作函数，IOThread开始的时候会调用 */
-    void SetWorkTask(const WorkCallback& cb);
 
     /* 阻塞的等待线程退出 */
     void SyncWaitThreadExit();
@@ -101,7 +97,6 @@ private:
     void Work();
     void SyncWaitThreadExitEx(int wait_time);
 private:
-    WorkCallback    m_work_callback{nullptr};
     HookCallback    m_thread_start_before_callback{nullptr};
     HookCallback    m_thread_stop_after_callback{nullptr};
     std::thread*    m_thread{nullptr};

@@ -46,11 +46,6 @@ void IOThread::Destory()
     m_thread = nullptr;
 }
 
-void IOThread::SetWorkTask(const WorkCallback& cb)
-{
-    m_work_callback = cb;
-}
-
 IOThreadID IOThread::GetTid() const
 {
     return m_tid;
@@ -64,7 +59,6 @@ std::thread::id IOThread::GetSysTid() const
 void IOThread::StartWorkFunc()
 {
     DebugAssertWithInfo(m_thread == nullptr,        "this is abnormal behavior");
-    DebugAssertWithInfo(m_work_callback != nullptr, "this is a fatal bug! work thread is exist!");
 
     m_thread = new std::thread([=](){
         Work();
@@ -82,7 +76,6 @@ void IOThread::SetOnThreadEnd_Hook(const HookCallback& cb)
 
 void IOThread::Work()
 {
-    
     /* 尝试执行线程开始前的 */
     if(m_thread_start_before_callback)
         m_thread_start_before_callback(m_tid);
@@ -115,7 +108,7 @@ void IOThread::SyncWaitThreadExitEx(int wait_time)
     int increase = wait_time > 0 ? interval : 0;
     int pass_time = 0;
 
-    if(m_thread->joinable())
+    if(wait_time < 0 && m_thread->joinable())
         m_thread->join();
     
     while (m_thread->joinable() && pass_time < wait_time)

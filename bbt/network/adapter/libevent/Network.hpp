@@ -25,15 +25,15 @@ enum NetworkStatus
     STOP        = 3,
 };
 
-typedef std::function<void(libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
-typedef std::function<void(const Errcode& )>                            OnErrorCallback;
+typedef std::function<void(const Errcode&, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
+typedef std::function<void(const Errcode&)>                                             OnErrorCallback;
 
 class Network:
     bbt::network::base::NetworkBase
 {
     typedef std::shared_ptr<IOThread> ThreadSPtr;
 public:
-    Network(EventBase* io_context, uint32_t sub_thread_num, const char* ip, short port);
+    Network(uint32_t sub_thread_num, const char* ip, short port);
     virtual ~Network();
 
     virtual Errcode                 AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect_cb) override;
@@ -61,15 +61,18 @@ protected:
     // virtual Errcode AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect_cb) override;
     // virtual Errcode AsyncAccept(int listen_fd, const interface::OnAcceptCallback& onaccept_cb) override;
 
-    libevent::ConnectionSPtr        DoAccept(int listenfd);
+    std::pair<Errcode, libevent::ConnectionSPtr>         
+                                    DoAccept(int listenfd);
     void                            OnAccept(evutil_socket_t fd, short events, OnAcceptCallback cb);
     void                            OnError(const Errcode& err);
     Errcode                         DoConnect(evutil_socket_t fd, const bbt::net::IPAddress& addr);
     void                            OnConnect(evutil_socket_t fd, short events, const bbt::net::IPAddress& addr, interface::OnConnectCallback cb);
 
     ThreadSPtr                      GetAThread();
+
+    void                            StopMainThread();
+    void                            StopSubThread();
 private:
-    EventBase*                      m_io_context{nullptr};
     NetworkStatus                   m_status{NetworkStatus::DEFAULT};
     evutil_socket_t                 m_listen_fd{-1};            // network 监听套接字
     bbt::net::IPAddress             m_listen_addr;              // 等同服务器地址
@@ -79,7 +82,7 @@ private:
     // ConnCallbacks                   m_conn_init_callbacks;      // 连接的io回调函数
     const int                       m_sub_loop_nums{1};         // 子（IO）线程数
     std::atomic_int                 m_cur_max_conn_count{0};    // 总接入连接数
-    ThreadSPtr                      m_main_thread{nullptr};     // accept 线程              
+    ThreadSPtr                      m_main_thread{nullptr};     // accept 线程
     std::vector<ThreadSPtr>         m_sub_threads;              // io 线程
     bbt::thread::lock::CountDownLatch*
                                     m_count_down_latch{nullptr};// 闭锁

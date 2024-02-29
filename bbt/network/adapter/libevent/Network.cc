@@ -15,19 +15,22 @@
 namespace bbt::network::libevent
 {
 
-Network::Network(EventBase* io_context, uint32_t sub_thread_num, const char* ip, short port)
+void WaitForCountDown(bbt::thread::lock::CountDownLatch* latch)
+{
+    latch->down();
+    latch->wait();
+}
+
+Network::Network(uint32_t sub_thread_num, const char* ip, short port)
     :m_listen_addr(ip, port),
-    m_io_context(io_context),
     m_sub_loop_nums(sub_thread_num),
     m_count_down_latch(new bbt::thread::lock::CountDownLatch(sub_thread_num + 1))
 {
-    AssertWithInfo(m_io_context != nullptr, "io_context can`t NULL!");
-
     /* 初始化主线程 */
-    m_main_thread = std::make_shared<libevent::IOThread>();
+    m_main_thread = std::make_shared<libevent::IOThread>([this](IOThreadID){ WaitForCountDown(m_count_down_latch); }, nullptr);
     /* 初始化子线程 */
     for (int i = 0; i < m_sub_loop_nums; ++i) {
-        auto io_thread = std::make_shared<libevent::IOThread>();
+        auto io_thread = std::make_shared<libevent::IOThread>([this](IOThreadID){ WaitForCountDown(m_count_down_latch); }, nullptr);
         m_sub_threads.push_back(io_thread);
     }
 
@@ -40,8 +43,9 @@ Network::~Network()
     delete m_count_down_latch;
     m_count_down_latch = nullptr;
 
-    if (Status() == NetworkStatus::RUNNING)
+    if (Status() == NetworkStatus::RUNNING) {
         Stop();
+    }
 
 }
 
@@ -60,6 +64,7 @@ void Network::Start()
     // 启动主线程
     m_main_thread->Start();
 
+    m_count_down_latch->wait();
     m_status = NetworkStatus::RUNNING;
 }
 
@@ -68,14 +73,32 @@ void Network::Stop()
     if (m_status != NetworkStatus::RUNNING)
         return;
 
+    /*停止接收线程*/
+    StopMainThread();
+
+    /* 停止IO线程 */
+    StopSubThread();
+
+    m_status = NetworkStatus::STOP;
+}
+
+void Network::StopMainThread()
+{
+    if (m_main_thread->IsRunning()) {
+        if (m_onaccept_event != nullptr)
+            m_onaccept_event->CancelListen();
+        Assert(m_main_thread->Stop());
+    }
+}
+
+void Network::StopSubThread()
+{
     for (int i = 0; i < m_sub_loop_nums; ++i) {
         if (!m_sub_threads[i]->IsRunning())
             continue;
         
         m_sub_threads[i]->Stop();
     }
-
-    m_status = NetworkStatus::STOP;
 }
 
 Errcode Network::StartListen(const OnAcceptCallback& onaccept_cb)
@@ -115,36 +138,39 @@ Network::ThreadSPtr Network::GetAThread()
     return m_sub_threads[index];
 }
 
-libevent::ConnectionSPtr Network::DoAccept(int listenfd)
+std::pair<Errcode, libevent::ConnectionSPtr> Network::DoAccept(int listenfd)
 {
-    evutil_socket_t         newfd = -1;
-    struct sockaddr_in      addr;
-    socklen_t               len = sizeof(addr);
-    bbt::net::IPAddress     endpoint;
+    evutil_socket_t fd;
+    sockaddr_in addr;
+    socklen_t len = sizeof(addr);
 
-    newfd = ::accept(listenfd, reinterpret_cast<sockaddr*>(&addr), &len);
+    fd = ::accept(m_listen_fd, reinterpret_cast<sockaddr*>(&addr), &len);
 
-    if ( (newfd < 0) && !(errno == EINTR ||  errno == EAGAIN || errno == ECONNABORTED) ) {
-        OnError(FASTERR_ERROR("::accept() failed!"));
-        return nullptr;
-    }
-
+    bbt::net::IPAddress endpoint;
     endpoint.set(addr);
 
-    auto conn = Create<libevent::Connection>(
-        GetAThread(),
-        newfd,
-        endpoint
-    );
+    if(fd >= 0) {
+        auto new_conn_sptr = Create<libevent::Connection>(GetAThread(), fd, endpoint);
+        return {FASTERR_NOTHING, new_conn_sptr} ;
+    }
 
-    return conn;
+    if( !(errno == EINTR ||  errno == EAGAIN || errno == ECONNABORTED) )
+        OnError(Errcode{"accept() failed!"});
+
+    return {FASTERR_NOTHING, nullptr};
 }
 
 void Network::OnAccept(evutil_socket_t fd, short events, OnAcceptCallback onaccept)
 {
     if ( (events & EventOpt::READABLE) > 0 ) {
-        auto conn_sptr = DoAccept(fd);
-        onaccept(conn_sptr);
+        while (true) {
+            auto [err, new_conn_sptr] = DoAccept(fd);
+            if (new_conn_sptr == nullptr)
+                break;
+            /* 排除掉 errno = try again 的 */
+            if ( (!err) || (err && new_conn_sptr != nullptr) )
+                onaccept(err, new_conn_sptr);
+        }
     }
 }
 

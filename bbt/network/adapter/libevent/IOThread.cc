@@ -21,13 +21,22 @@ IOThread::IOThread()
     Init();
 }
 
+IOThread::IOThread(const HookCallback& thread_begin, const HookCallback& thread_end)
+    :m_eventloop(std::make_unique<EventLoop>())
+{
+    SetOnThreadBegin_Hook(thread_begin);
+    SetOnThreadEnd_Hook(thread_end);
+}
+
+
 IOThread::~IOThread()
 {
     /* 等待线程停止 */
     if(m_status == IOThreadRunStatus::Running)
-        Stop();        
+        Stop();
     /* 资源回收 */
     Destory();
+    // printf("%d thread destory\n", GetTid());
 }
 
 void IOThread::Init()
@@ -47,7 +56,8 @@ void IOThread::evWorkFunc()
 
 void IOThread::WorkHandle()
 {
-    m_eventloop->StartLoop(EventLoopOpt::LOOP_NO_EXIT_ON_EMPTY);
+    auto err = m_eventloop->StartLoop(EventLoopOpt::LOOP_NO_EXIT_ON_EMPTY);
+    Assert(err);
 }
 
 const std::unique_ptr<EventLoop>& IOThread::GetEventLoop() const
@@ -57,10 +67,17 @@ const std::unique_ptr<EventLoop>& IOThread::GetEventLoop() const
 
 Errcode IOThread::Stop()
 {
+    if (m_status == Finish)
+        return FASTERR_NOTHING;
+
+    printf("[IOThread::Stop] m_iothread %d threadid %d\n" , m_eventloop->GetEventNum(), GetTid());
     auto err = m_eventloop->BreakLoop();
+    if (!err)
+        return err;
     
     /* 阻塞式的等待 */
     SyncWaitThreadExit();
+
     return err;
 }
 

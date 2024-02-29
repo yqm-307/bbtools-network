@@ -41,6 +41,7 @@ Errcode EventLoop::StartLoop(EventLoopOpt opt)
 
 Errcode EventLoop::BreakLoop()
 {
+    printf("loop break! event num:%d\n", m_io_context->GetEventNum());
     int err = event_base_loopbreak(m_io_context->m_io_context);
 
     if (err < 0) {
@@ -54,6 +55,11 @@ std::shared_ptr<Event> EventLoop::CreateEvent(evutil_socket_t fd, short events, 
 {
     auto event_sptr = std::make_shared<Event>(m_io_context, fd, events, onevent_cb);
     return event_sptr;
+}
+
+int EventLoop::GetEventNum()
+{
+    return m_io_context->GetEventNum();
 }
 
 

@@ -37,6 +37,8 @@ public:
     BBTATTR_FUNC_RetVal Errcode StartLoop(EventLoopOpt opt);
     BBTATTR_FUNC_RetVal Errcode BreakLoop();
 
+    int GetEventNum();
+
     std::shared_ptr<Event> CreateEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
 
 

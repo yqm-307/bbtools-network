@@ -58,13 +58,13 @@ public:
     operator bool()
     { return (Type() == ErrType::ERRTYPE_NOTHING); }    
 
-    ErrType     Type()
+    ErrType     Type() const
     { return GetErrType(); }
     
-    const std::string& What()
+    const std::string& What() const
     { return GetMsg(); }
 
-    const char* CWhat()
+    const char* CWhat() const
     { return GetCMsg(); }
 
     void        SetInfo(const std::string& info)

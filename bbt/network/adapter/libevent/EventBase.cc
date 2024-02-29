@@ -24,4 +24,9 @@ EventBase::~EventBase()
     event_base_free(m_io_context);
 }
 
+int EventBase::GetEventNum()
+{
+    return event_base_get_num_events(m_io_context, EVENT_BASE_COUNT_ADDED);
+}
+
 }

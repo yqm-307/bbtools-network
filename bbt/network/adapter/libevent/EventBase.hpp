@@ -25,7 +25,7 @@ public:
     EventBase();
     ~EventBase();
 
-    
+    int GetEventNum();
 private:
     event_base* m_io_context{nullptr};
 };

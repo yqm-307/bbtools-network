@@ -31,6 +31,7 @@ public:
     typedef std::function<void(evutil_socket_t, short, void*)>              EventCallback;
 
     IOThread();
+    explicit IOThread(const HookCallback& thread_begin, const HookCallback& thread_end);
     virtual ~IOThread();
 
     /* 阻塞的停止thread */
