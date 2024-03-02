@@ -25,3 +25,6 @@ target_link_libraries(Test_Client ${MY_LIBS})
 
 add_executable(Test_Server server.cc)
 target_link_libraries(Test_Server ${MY_LIBS})
+
+add_executable(test1 test.cc)
+target_link_libraries(test1 ${MY_LIBS})

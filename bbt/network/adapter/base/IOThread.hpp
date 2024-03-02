@@ -86,16 +86,16 @@ protected:
     void SyncWaitThreadExit();
 
     /* 阻塞的等待线程退出，阻塞到wait_time就返回，wait_time小于0则无限阻塞，等于0则不阻塞 */
-    void SyncWaitThreadExitWithTime(int wait_time);
+    bool SyncWaitThreadExitWithTime(int wait_time);
 protected:
     /* 由子类控制 */
-    IOThreadRunStatus   m_status{IOThreadRunStatus::Default};
+    volatile IOThreadRunStatus   m_status{IOThreadRunStatus::Default};
 private:
     void Init();
     void Destory();
     /* 核心函数，真正的work线程 */
     void Work();
-    void SyncWaitThreadExitEx(int wait_time);
+    bool SyncWaitThreadExitEx(int wait_time);
 private:
     HookCallback    m_thread_start_before_callback{nullptr};
     HookCallback    m_thread_stop_after_callback{nullptr};

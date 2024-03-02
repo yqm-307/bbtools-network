@@ -26,7 +26,7 @@ EventLoop::~EventLoop()
     m_io_context = nullptr;
 }
 
-Errcode EventLoop::StartLoop(EventLoopOpt opt)
+Errcode EventLoop::StartLoop(int opt)
 {
     int err = event_base_loop(m_io_context->m_io_context, opt);
 
@@ -41,7 +41,6 @@ Errcode EventLoop::StartLoop(EventLoopOpt opt)
 
 Errcode EventLoop::BreakLoop()
 {
-    printf("loop break! event num:%d\n", m_io_context->GetEventNum());
     int err = event_base_loopbreak(m_io_context->m_io_context);
 
     if (err < 0) {

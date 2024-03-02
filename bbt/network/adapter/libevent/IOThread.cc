@@ -47,6 +47,7 @@ void IOThread::Init()
 
 void IOThread::Destory()
 {
+    m_eventloop = nullptr;
 }
 
 
@@ -56,7 +57,7 @@ void IOThread::evWorkFunc()
 
 void IOThread::WorkHandle()
 {
-    auto err = m_eventloop->StartLoop(EventLoopOpt::LOOP_NO_EXIT_ON_EMPTY);
+    auto err = m_eventloop->StartLoop(EVLOOP_NO_EXIT_ON_EMPTY);
     Assert(err);
 }
 

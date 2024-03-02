@@ -1,4 +1,5 @@
 #include <bbt/network/adapter/libevent/Network.hpp>
+#include <event2/thread.h>
 
 typedef bbt::network::libevent::Network Network;
 typedef bbt::network::libevent::Connection Connection;
@@ -9,6 +10,7 @@ typedef bbt::network::interface::INetConnectionSPtr INetConnectionSPtr;
 
 int main()
 {
+    evthread_use_pthreads();
     Network network{1, "127.0.0.1", 10011};
 
     network.AsyncConnect("127.0.0.1", 10010,

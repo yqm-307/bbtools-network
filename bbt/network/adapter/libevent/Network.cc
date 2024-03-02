@@ -97,8 +97,10 @@ void Network::StopSubThread()
         if (!m_sub_threads[i]->IsRunning())
             continue;
         
-        m_sub_threads[i]->Stop();
+        Assert(m_sub_threads[i]->Stop());
     }
+
+    m_status = NetworkStatus::STOP;
 }
 
 Errcode Network::StartListen(const OnAcceptCallback& onaccept_cb)

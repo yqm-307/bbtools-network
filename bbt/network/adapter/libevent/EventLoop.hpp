@@ -34,7 +34,7 @@ public:
     EventLoop();
     ~EventLoop();
 
-    BBTATTR_FUNC_RetVal Errcode StartLoop(EventLoopOpt opt);
+    BBTATTR_FUNC_RetVal Errcode StartLoop(int opt);
     BBTATTR_FUNC_RetVal Errcode BreakLoop();
 
     int GetEventNum();

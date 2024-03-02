@@ -100,11 +100,11 @@ void IOThread::Start()
     StartWorkFunc();
 }
 
-void IOThread::SyncWaitThreadExitEx(int wait_time)
+bool IOThread::SyncWaitThreadExitEx(int wait_time)
 {
     const int interval = 50;    // 休眠间隔
     if(wait_time == 0)
-        return;
+        return false;
     int increase = wait_time > 0 ? interval : 0;
     int pass_time = 0;
 
@@ -116,6 +116,8 @@ void IOThread::SyncWaitThreadExitEx(int wait_time)
         std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         pass_time += increase;    
     }
+
+    return !(m_thread->joinable());
 }
 
 void IOThread::SyncWaitThreadExit()
@@ -123,9 +125,9 @@ void IOThread::SyncWaitThreadExit()
     SyncWaitThreadExitEx(-1);
 }
 
-void IOThread::SyncWaitThreadExitWithTime(int wait_time)
+bool IOThread::SyncWaitThreadExitWithTime(int wait_time)
 {
-    SyncWaitThreadExitEx(wait_time);
+    return SyncWaitThreadExitEx(wait_time);
 }
 
 
