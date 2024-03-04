@@ -8,21 +8,29 @@
  * @copyright Copyright (c) 2024
  * 
  */
+#include <bbt/base/uuid/EasyID.hpp>
 #include <bbt/network/adapter/libevent/Event.hpp>
 namespace bbt::network::libevent
 {
 
+EventId Event::GenerateID()
+{
+    return bbt::uuid::EasyID<bbt::uuid::emEasyID::EM_AUTO_INCREMENT_SAFE, 2>::GenerateID();
+}
+
 void COnEventWapper(evutil_socket_t fd, short events, void* arg) 
 {
-    auto param = reinterpret_cast<Event::COnEventWapperParam*>(arg);
-    assert(param != nullptr);
-    param->m_cpp_handler(fd, events);
+    auto pthis = reinterpret_cast<Event*>(arg);
+    assert(pthis != nullptr);
+    pthis->m_c_func_wapper_param.m_cpp_handler(pthis->shared_from_this(), events);
 }
 
 Event::Event(EventBase* base, evutil_socket_t fd, short listen_events, const OnEventCallback& onevent_cb)
+    :m_id(GenerateID())
 {
+    Assert(base != nullptr);
     m_c_func_wapper_param.m_cpp_handler = onevent_cb;
-    m_raw_event = event_new(base->m_io_context, fd, listen_events, COnEventWapper, &m_c_func_wapper_param);
+    m_raw_event = event_new(base->m_io_context, fd, listen_events, COnEventWapper, this);
 }
 
 Event::~Event()
@@ -67,4 +75,19 @@ Errcode Event::CancelListen()
     return FASTERR_NOTHING;
 }
 
+EventId Event::GetEventId()
+{
+    return m_id;
 }
+
+int Event::GetSocket()
+{
+    return event_get_fd(m_raw_event);
+}
+
+short Event::GetEvents()
+{
+    return event_get_events(m_raw_event);
+}
+
+} // namespace

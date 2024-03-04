@@ -26,7 +26,7 @@ enum NetworkStatus
 };
 
 typedef std::function<void(const Errcode&, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
-typedef std::function<void(const Errcode&)>                                             OnErrorCallback;
+typedef std::function<void(const Errcode&)>                                             OnNetworkErrorCallback;
 
 class Network:
     bbt::network::base::NetworkBase
@@ -41,32 +41,20 @@ public:
     /* 初始化并设置监听事件 */
     Errcode                         StartListen(const OnAcceptCallback& onaccept_cb);
     /* 设置network错误信息回调 */
-    void                            SetOnErrorHandle(const OnErrorCallback& onerror_cb);
-    /* 设置连接的io回调 */
-    void                            SetConnectIOCallbacks(ConnCallbacks callbacks);    
-
+    void                            SetOnErrorHandle(const OnNetworkErrorCallback& onerror_cb);
     /* 开启所有线程 */
     void                            Start();
-
     /* 关闭所有线程 */
     void                            Stop();
-
     /* 获取 network 状态 */
     NetworkStatus                   Status();
 protected:
-    // virtual std::pair<Errcode, interface::INetConnectionSPtr>  
-    //                                 AsyncAccept();
-    // libevent::ConnectionSPtr        NewConn(int fd);
-
-    // virtual Errcode AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect_cb) override;
-    // virtual Errcode AsyncAccept(int listen_fd, const interface::OnAcceptCallback& onaccept_cb) override;
-
     std::pair<Errcode, libevent::ConnectionSPtr>         
                                     DoAccept(int listenfd);
     void                            OnAccept(evutil_socket_t fd, short events, OnAcceptCallback cb);
     void                            OnError(const Errcode& err);
     Errcode                         DoConnect(evutil_socket_t fd, const bbt::net::IPAddress& addr);
-    void                            OnConnect(evutil_socket_t fd, short events, const bbt::net::IPAddress& addr, interface::OnConnectCallback cb);
+    void                            OnConnect(std::shared_ptr<Event> event, short events, const bbt::net::IPAddress& addr, interface::OnConnectCallback cb);
 
     ThreadSPtr                      GetAThread();
 
@@ -77,7 +65,7 @@ private:
     evutil_socket_t                 m_listen_fd{-1};            // network 监听套接字
     bbt::net::IPAddress             m_listen_addr;              // 等同服务器地址
     std::shared_ptr<Event>          m_onaccept_event{nullptr};
-    OnErrorCallback                 m_error_handle{nullptr};
+    OnNetworkErrorCallback          m_error_handle{nullptr};
 
     // ConnCallbacks                   m_conn_init_callbacks;      // 连接的io回调函数
     const int                       m_sub_loop_nums{1};         // 子（IO）线程数
@@ -86,6 +74,20 @@ private:
     std::vector<ThreadSPtr>         m_sub_threads;              // io 线程
     bbt::thread::lock::CountDownLatch*
                                     m_count_down_latch{nullptr};// 闭锁
+
+private:
+    struct ConnectEventMapImpl
+    {
+        Errcode                         AddConnectEvent(std::shared_ptr<Event> event);
+        Errcode                         DelConnectEvent(std::shared_ptr<Event> event);
+        std::mutex                      m_connect_mutex;
+        std::map<EventId, std::shared_ptr<Event>>
+                                        m_connect_events;           // 连接事件
+    };
+
+    ConnectEventMapImpl                 m_impl_connect_event_map;   // connect 事件集
+
+
 };
 
 } // namespace bbt::network::libevent

@@ -26,6 +26,7 @@ Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket
 
 Connection::~Connection()
 {
+    Close();
 }
 
 void Connection::SetOpt_CloseTimeoutMS(int timeout_ms)
@@ -52,7 +53,7 @@ void Connection::OnRecv(const char* data, size_t len)
 void Connection::OnSend(const Errcode& err, size_t succ_len)
 {
     if (m_callbacks.on_send_callback) {
-        m_callbacks.on_send_callback(err, succ_len);
+        m_callbacks.on_send_callback(shared_from_this(), err, succ_len);
     }
 
     OnError(Errcode{"on send!, but no send callback!"});
@@ -61,7 +62,7 @@ void Connection::OnSend(const Errcode& err, size_t succ_len)
 void Connection::OnClose()
 {
     if (m_callbacks.on_close_callback) {
-        m_callbacks.on_close_callback();
+        m_callbacks.on_close_callback(shared_from_this());
     }
 
     OnError(Errcode{"on closed!, but no close callback!"});
@@ -70,7 +71,7 @@ void Connection::OnClose()
 void Connection::OnTimeout()
 {
     if (m_callbacks.on_timeout_callback) {
-        m_callbacks.on_timeout_callback();
+        m_callbacks.on_timeout_callback(shared_from_this());
     }
     OnError(Errcode{"on timeout!, but no timeout callback!"});
 }
@@ -78,25 +79,28 @@ void Connection::OnTimeout()
 void Connection::OnError(const Errcode& err)
 {
     if (m_callbacks.on_err_callback) {
-        m_callbacks.on_err_callback(err);
+        m_callbacks.on_err_callback(shared_from_this(), err);
     }
 }
 
 void Connection::Close()
 {
+    if (IsClosed())
+        return;
+
     auto err = m_event->CancelListen();
     if (!err) OnError(err);
     
     CloseSocket();
-
     SetStatus(ConnStatus::DECONNECTED);
+    OnClose();
 }
 
 void Connection::RunInEventLoop()
 {
     m_event = m_current_thread->RegisterEventSafe(GetSocket(), EV_CLOSED | EV_PERSIST | EV_READ, 
-    [this](evutil_socket_t socket, short events){
-        OnEvent(socket, events);
+    [this](std::shared_ptr<Event> event, short events){
+        OnEvent(event->GetSocket(), events);
     });
 
     m_event->StartListen(m_timeout_ms);
@@ -222,7 +226,7 @@ int Connection::AsyncSendInThread()
     auto weak_this = weak_from_this();
     auto connid = GetMemberId();
     m_send_event = m_current_thread->RegisterEventSafe(GetSocket(), EV_WRITE,
-    [this, buffer](evutil_socket_t fd, short events){
+    [this, buffer](std::shared_ptr<Event> event, short events){
         Errcode     err{"", ErrType::ERRTYPE_NOTHING};
         int         size = 0;
 

@@ -15,7 +15,7 @@
 
 namespace bbt::network::libevent
 {
-
+class Event;
 /**
  * @brief 监听事件的事件类型
  * 
@@ -33,10 +33,12 @@ enum EventOpt : short
  * @brief 封装libevent的事件触发函数，当有关注的事件发生时通过此函数
  * 回调通知到关注者
  */
-typedef std::function<void(evutil_socket_t /*fd*/, short /*events flag*/)> OnEventCallback;
+typedef std::function<void(std::shared_ptr<Event> /*this*/, short /*events*/)> OnEventCallback;
 
-class Event
+class Event:
+    public std::enable_shared_from_this<Event>
 {
+    friend void COnEventWapper(evutil_socket_t fd, short events, void* arg);
 public:
     typedef struct {OnEventCallback m_cpp_handler{nullptr};} COnEventWapperParam;
 
@@ -58,8 +60,16 @@ public:
      */
     Errcode CancelListen();
 
+    EventId GetEventId();
+
+    int     GetSocket();
+
+    short   GetEvents();
 private:
-    event*                          m_raw_event;                    /* 包装的libevent事件句柄 */
+    static EventId GenerateID();
+private:
+    EventId                         m_id{0};
+    event*                          m_raw_event;           /* 包装的libevent事件句柄 */
     COnEventWapperParam             m_c_func_wapper_param; /* cfunc转发到std::function包装器 */
     uint32_t                        m_timeout{0};
 };

@@ -36,7 +36,6 @@ IOThread::~IOThread()
         Stop();
     /* 资源回收 */
     Destory();
-    // printf("%d thread destory\n", GetTid());
 }
 
 void IOThread::Init()
@@ -71,7 +70,6 @@ Errcode IOThread::Stop()
     if (m_status == Finish)
         return FASTERR_NOTHING;
 
-    printf("[IOThread::Stop] m_iothread %d threadid %d\n" , m_eventloop->GetEventNum(), GetTid());
     auto err = m_eventloop->BreakLoop();
     if (!err)
         return err;

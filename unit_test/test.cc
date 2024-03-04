@@ -17,7 +17,8 @@ int main()
 
     for (int i = 0; i < 5; ++i){
         auto thread = std::make_shared<libevent::evThread>();
-        auto event = thread->RegistEvent(-1, libevent::EventOpt::PERSIST | libevent::EventOpt::TIMEOUT, [=](int, short){
+        auto event = thread->RegistEvent(-1, libevent::EventOpt::PERSIST | libevent::EventOpt::TIMEOUT, 
+        [=](auto event, short){
         });
         event->StartListen(200);
         evec.push_back(event);

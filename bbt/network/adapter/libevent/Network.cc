@@ -109,8 +109,8 @@ Errcode Network::StartListen(const OnAcceptCallback& onaccept_cb)
         return Errcode{"repeat regist event!"};
 
     m_onaccept_event = m_main_thread->RegisterEventSafe(m_listen_fd, EventOpt::READABLE | EventOpt::PERSIST, 
-    [this, onaccept_cb](evutil_socket_t fd, short events){
-        OnAccept(fd, events, onaccept_cb);
+    [this, onaccept_cb](std::shared_ptr<Event> event, short events){
+        OnAccept(event->GetSocket(), events, onaccept_cb);
     });
 
     m_onaccept_event->StartListen(50);
@@ -124,7 +124,7 @@ void Network::OnError(const Errcode& err)
         m_error_handle(err);
 }
 
-void Network::SetOnErrorHandle(const OnErrorCallback& onerror_cb)
+void Network::SetOnErrorHandle(const OnNetworkErrorCallback& onerror_cb)
 {
     m_error_handle = onerror_cb;
 }
@@ -170,60 +170,61 @@ void Network::OnAccept(evutil_socket_t fd, short events, OnAcceptCallback onacce
             if (new_conn_sptr == nullptr)
                 break;
             /* 排除掉 errno = try again 的 */
-            if ( (!err) || (err && new_conn_sptr != nullptr) )
+            if ( (!err) || (err && new_conn_sptr != nullptr) ) {
                 onaccept(err, new_conn_sptr);
+                new_conn_sptr->RunInEventLoop();
+            }
         }
     }
 }
 
 Errcode Network::AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect)
 {
-    int socket = bbt::net::Util::CreateConnect(ip, port, true);    
+    int socket = bbt::net::Util::CreateConnect(ip, port, true);
     if (socket < 0)
         return Errcode{"create socket failed!"};
 
     bbt::net::IPAddress addr{ip, port};
 
-    auto err = DoConnect(socket, addr);
-    if (!err && err.Type() == ErrType::ERRTYPE_CONNECT_TRY_AGAIN) {
-        auto event = m_main_thread->RegisterEventSafe(socket, EventOpt::WRITEABLE | EventOpt::TIMEOUT, 
-        [this, onconnect, addr](evutil_socket_t fd, short events){
-            OnConnect(fd, events, addr, onconnect);
-        });
+    auto event = m_main_thread->RegisterEventSafe(socket, EventOpt::WRITEABLE | EventOpt::TIMEOUT,
+    [this, onconnect, addr](std::shared_ptr<Event> event, short events){
+        OnConnect(event, events, addr, onconnect);
+        m_impl_connect_event_map.DelConnectEvent(event);
+    });
 
-        event->StartListen(CONNECT_TIMEOUT_MS);
-    }
-
-    if (err) {
-        auto conn_sptr = Create<libevent::Connection>(GetAThread(), socket, addr);
-        onconnect(FASTERR_NOTHING, conn_sptr);
-    }
+    event->StartListen(10);
+    m_impl_connect_event_map.AddConnectEvent(event);
 
     return FASTERR_NOTHING;
 }
 
-void Network::OnConnect(evutil_socket_t fd, short events, const bbt::net::IPAddress& addr, interface::OnConnectCallback onconnect)
+void Network::OnConnect(std::shared_ptr<Event> event, short events, const bbt::net::IPAddress& addr, interface::OnConnectCallback onconnect)
 {
+    int sockfd = event->GetSocket();
+
     if (events & EventOpt::TIMEOUT) {
         onconnect(Errcode{"connect client timeout!", ErrType::ERRTYPE_CONNECT_TIMEOUT}, nullptr);
-        ::close(fd);
+        ::close(sockfd);
         return;
     }
         
     if (events & EventOpt::WRITEABLE) {
-        auto err = DoConnect(fd, addr);
+        auto err = DoConnect(sockfd, addr);
         if (!err && err.Type() == ErrType::ERRTYPE_CONNECT_TRY_AGAIN) {
-            auto event = m_main_thread->RegisterEventSafe(fd, EventOpt::WRITEABLE | EventOpt::TIMEOUT, 
-            [this, onconnect, addr](evutil_socket_t fd, short events){
-                OnConnect(fd, events, addr, onconnect);
+            auto event = m_main_thread->RegisterEventSafe(sockfd, EventOpt::WRITEABLE | EventOpt::TIMEOUT, 
+            [this, onconnect, addr](std::shared_ptr<Event> event, short events){
+                OnConnect(event, events, addr, onconnect);
+                m_impl_connect_event_map.DelConnectEvent(event);
             });
 
             event->StartListen(CONNECT_TIMEOUT_MS);
+            m_impl_connect_event_map.AddConnectEvent(event);
         }
 
         if (err) {
-            auto conn_sptr = Create<libevent::Connection>(GetAThread(), fd, addr);
+            auto conn_sptr = Create<libevent::Connection>(GetAThread(), sockfd, addr);
             onconnect(FASTERR_NOTHING, conn_sptr);
+            conn_sptr->RunInEventLoop();
         }
     }
 }
@@ -245,6 +246,24 @@ Errcode Network::DoConnect(evutil_socket_t fd, const bbt::net::IPAddress& addr)
     return Errcode{"connect failed! undef error!"};
 }
 
+Errcode Network::ConnectEventMapImpl::AddConnectEvent(std::shared_ptr<Event> event)
+{
+    std::lock_guard<std::mutex> lock(m_connect_mutex);
+    auto [it, succ] = m_connect_events.insert(std::make_pair(event->GetEventId(), event));
+    if (!succ)
+        return FASTERR_ERROR("event repeat!");
+    
+    return FASTERR_NOTHING;
+}
 
+Errcode Network::ConnectEventMapImpl::DelConnectEvent(std::shared_ptr<Event> event)
+{
+    std::lock_guard<std::mutex> lock(m_connect_mutex);
+    auto count = m_connect_events.erase(event->GetEventId());
+    if (count <= 0)
+        return FASTERR_ERROR("event not found!");
+    
+    return FASTERR_NOTHING;
+}
 
 } // namespace bbt::network::libevent

@@ -49,6 +49,8 @@ enum ConnStatus
 
 // 连接id
 typedef uint64_t ConnId;
+// 事件id
+typedef uint64_t EventId;
 
 BBTATTR_COMM_Unused
 static bool GlobalInit()

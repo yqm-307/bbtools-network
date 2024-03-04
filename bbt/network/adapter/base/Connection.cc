@@ -24,8 +24,6 @@ ConnectionBase::ConnectionBase(int socket, const bbt::net::IPAddress& addr)
 
 ConnectionBase::~ConnectionBase()
 {
-    Close();
-
     if (m_socket_fd < 0)
         return;
 
@@ -75,22 +73,22 @@ void ConnectionBase::SetStatus(ConnStatus status)
 
 void ConnectionBase::OnRecv(const char* data, size_t len)
 {
-    AssertWithInfo(false, "emply implementation!");
+    OnError(Errcode{"ConnectionBase::OnRecv() emply implementation!"});
 }
 
 void ConnectionBase::OnSend(const Errcode& err, size_t succ_len)
 {
-    AssertWithInfo(false, "emply implementation!");
+    OnError(Errcode{"ConnectionBase::OnSend() emply implementation!"});
 }
 
 void ConnectionBase::OnClose()
 {
-    AssertWithInfo(false, "emply implementation!");
+    OnError(Errcode{"ConnectionBase::OnClose() emply implementation!"});
 }
 
 void ConnectionBase::OnTimeout()
 {
-    AssertWithInfo(false, "emply implementation!");
+    OnError(Errcode{"ConnectionBase::OnTimeout() emply implementation!"});
 }
 
 evutil_socket_t ConnectionBase::GetSocket() const

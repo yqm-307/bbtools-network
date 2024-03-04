@@ -40,7 +40,8 @@ BOOST_AUTO_TEST_CASE(evthread_exit)
 
     for (int i = 0; i < 5; ++i){
         auto thread = std::make_shared<libevent::evThread>();
-        auto event = thread->RegistEvent(-1, libevent::EventOpt::PERSIST | libevent::EventOpt::TIMEOUT, [=](int, short){
+        auto event = thread->RegistEvent(-1, libevent::EventOpt::PERSIST | libevent::EventOpt::TIMEOUT,
+        [=](auto, short){
             printf("%d\n", i);
         });
         event->StartListen(200);

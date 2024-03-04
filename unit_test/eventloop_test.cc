@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(test_time_count)
     EventLoop* loop = new EventLoop();
 
     auto event1 = loop->CreateEvent(0, EventOpt::PERSIST,
-    [&count](evutil_socket_t fd, short events){
+    [&count](auto event, short events){
         if (count < 10)
             ++count;
         printf("%d\n", count);
@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(test_time_count)
     event1->StartListen(10);
 
     auto event2 = loop->CreateEvent(0, EventOpt::TIMEOUT,
-    [&event1, &count](evutil_socket_t fd, short events){
+    [&event1, &count](auto event, short events){
         event1->CancelListen();
         printf("cancel\n");
     });

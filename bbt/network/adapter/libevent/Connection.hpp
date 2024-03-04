@@ -23,11 +23,13 @@ class Connection;
 typedef std::shared_ptr<Connection> ConnectionSPtr;
 
 
-typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> OnRecvCallback;
-typedef std::function<void(const Errcode& /*err*/, size_t /*send_len*/)>    OnSendCallback;
-typedef std::function<void()>                                               OnCloseCallback;
-typedef std::function<void()>                                               OnTimeoutCallback;
-typedef std::function<void(const Errcode&)>                                 OnErrorCallback;
+typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> 
+                                                                            OnRecvCallback;
+typedef std::function<void(ConnectionSPtr /*conn*/, const Errcode& /*err */, size_t /*send_len*/)>   
+                                                                            OnSendCallback;
+typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnCloseCallback;
+typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
+typedef std::function<void(ConnectionSPtr /*conn*/, const Errcode&)>        OnErrorCallback;
 
 struct ConnCallbacks
 {
@@ -44,6 +46,7 @@ class Connection:
     public std::enable_shared_from_this<Connection>
 {
     friend class bbt::templateutil::ManagerBase<ConnId, ConnectionBase>;
+    friend class Network;
 public:
     virtual ~Connection();
 
@@ -60,8 +63,7 @@ public:
     /* 关闭此连接 */
     virtual void            Close() override;
 
-    /* 启动Connection */
-    void                    RunInEventLoop();
+
 
 private:
     Connection(
@@ -70,6 +72,8 @@ private:
         bbt::net::IPAddress&    ipaddr
     );
 protected:
+    /* 启动Connection */
+    void                    RunInEventLoop();
     void                    OnEvent(evutil_socket_t sockfd, short events);
 
     Errcode                 Recv(evutil_socket_t sockfd);
@@ -87,8 +91,6 @@ protected:
 private:
     std::shared_ptr<libevent::IOThread>
                             m_current_thread{nullptr};
-    // std::shared_ptr<EventLoop>
-    //                         m_eventloop{nullptr};       // io 上下文
     ConnCallbacks           m_callbacks;                // 回调函数
     std::shared_ptr<Event>  m_event{nullptr};           // 事件
     std::shared_ptr<Event>  m_send_event{nullptr};      // 发送事件
