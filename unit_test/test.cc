@@ -11,7 +11,7 @@ using namespace bbt::network;
 
 int main()
 {
-    evthread_use_pthreads();
+    Assert(bbt::network::GlobalInit());
     std::vector<std::shared_ptr<libevent::evThread>> vec;
     std::vector<std::shared_ptr<libevent::Event>> evec;
 

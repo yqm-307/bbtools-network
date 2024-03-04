@@ -23,8 +23,10 @@
 #include <memory>
 
 #include <event2/event.h>
+#include <event2/thread.h>
 
 #include <bbt/base/assert/Assert.hpp>
+#include <bbt/base/Attribute.hpp>
 #include <bbt/network/Errcode.hpp>
 
 namespace bbt::network
@@ -47,6 +49,12 @@ enum ConnStatus
 
 // 连接id
 typedef uint64_t ConnId;
+
+BBTATTR_COMM_Unused
+static bool GlobalInit()
+{
+    return evthread_use_pthreads() == 0;
+}
 
 }
 

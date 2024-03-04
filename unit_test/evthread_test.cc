@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(iothread_exit)
 
 BOOST_AUTO_TEST_CASE(evthread_exit)
 {
-    Assert(evthread_use_pthreads() == 0);
+    Assert(bbt::network::GlobalInit());
     std::vector<std::shared_ptr<libevent::evThread>> vec;
     std::vector<std::shared_ptr<libevent::Event>> evec;
 

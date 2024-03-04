@@ -10,7 +10,8 @@ typedef bbt::network::interface::INetConnectionSPtr INetConnectionSPtr;
 
 int main()
 {
-    evthread_use_pthreads();
+    bbt::network::GlobalInit();
+
     Network network{1, "127.0.0.1", 10011};
 
     network.AsyncConnect("127.0.0.1", 10010,
