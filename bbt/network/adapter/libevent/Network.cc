@@ -21,9 +21,8 @@ void WaitForCountDown(bbt::thread::lock::CountDownLatch* latch)
     latch->wait();
 }
 
-Network::Network(uint32_t sub_thread_num, const char* ip, short port)
-    :m_listen_addr(ip, port),
-    m_sub_loop_nums(sub_thread_num),
+Network::Network(uint32_t sub_thread_num)
+    :m_sub_loop_nums(sub_thread_num),
     m_count_down_latch(new bbt::thread::lock::CountDownLatch(sub_thread_num + 1))
 {
     /* 初始化主线程 */
@@ -33,9 +32,6 @@ Network::Network(uint32_t sub_thread_num, const char* ip, short port)
         auto io_thread = std::make_shared<libevent::IOThread>([this](IOThreadID){ WaitForCountDown(m_count_down_latch); }, nullptr);
         m_sub_threads.push_back(io_thread);
     }
-
-    m_listen_fd = bbt::net::Util::CreateListen(ip, port, true);
-    AssertWithInfo(m_listen_fd >= 0, "create listen socket failed!");
 }
 
 Network::~Network()
@@ -103,17 +99,27 @@ void Network::StopSubThread()
     m_status = NetworkStatus::STOP;
 }
 
-Errcode Network::StartListen(const OnAcceptCallback& onaccept_cb)
+Errcode Network::StartListen(const char* ip, short port, const OnAcceptCallback& onaccept_cb)
 {
+    /**
+     * 在主线程中注册事件accept handle，当socket可读调用接受程序处理新连接
+     */
+    m_listen_addr = bbt::net::IPAddress(ip, port);
+    m_listen_fd = bbt::net::Util::CreateListen(ip, port, true);
+    AssertWithInfo(m_listen_fd >= 0, "create listen socket failed!");
+
+    AssertWithInfo(m_onaccept_event == nullptr, "can`t repeat regist!");
+    AssertWithInfo(onaccept_cb      != nullptr, "accept handle not empty!");
+
     if (m_onaccept_event != nullptr)
         return Errcode{"repeat regist event!"};
 
-    m_onaccept_event = m_main_thread->RegisterEventSafe(m_listen_fd, EventOpt::READABLE | EventOpt::PERSIST, 
+    m_onaccept_event = m_main_thread->RegisterEvent(m_listen_fd, EventOpt::READABLE, 
     [this, onaccept_cb](std::shared_ptr<Event> event, short events){
         OnAccept(event->GetSocket(), events, onaccept_cb);
     });
 
-    m_onaccept_event->StartListen(50);
+    m_onaccept_event->StartListen(0);
     
     return FASTERR_NOTHING;
 }
@@ -142,9 +148,9 @@ Network::ThreadSPtr Network::GetAThread()
 
 std::pair<Errcode, libevent::ConnectionSPtr> Network::DoAccept(int listenfd)
 {
-    evutil_socket_t fd;
-    sockaddr_in addr;
-    socklen_t len = sizeof(addr);
+    evutil_socket_t     fd;
+    sockaddr_in         addr;
+    socklen_t           len = sizeof(addr);
 
     fd = ::accept(m_listen_fd, reinterpret_cast<sockaddr*>(&addr), &len);
 
@@ -186,7 +192,7 @@ Errcode Network::AsyncConnect(const char* ip, short port, const interface::OnCon
 
     bbt::net::IPAddress addr{ip, port};
 
-    auto event = m_main_thread->RegisterEventSafe(socket, EventOpt::WRITEABLE | EventOpt::TIMEOUT,
+    auto event = m_main_thread->RegisterEvent(socket, EventOpt::WRITEABLE | EventOpt::TIMEOUT,
     [this, onconnect, addr](std::shared_ptr<Event> event, short events){
         OnConnect(event, events, addr, onconnect);
         m_impl_connect_event_map.DelConnectEvent(event);
@@ -211,7 +217,7 @@ void Network::OnConnect(std::shared_ptr<Event> event, short events, const bbt::n
     if (events & EventOpt::WRITEABLE) {
         auto err = DoConnect(sockfd, addr);
         if (!err && err.Type() == ErrType::ERRTYPE_CONNECT_TRY_AGAIN) {
-            auto event = m_main_thread->RegisterEventSafe(sockfd, EventOpt::WRITEABLE | EventOpt::TIMEOUT, 
+            auto event = m_main_thread->RegisterEvent(sockfd, EventOpt::WRITEABLE | EventOpt::TIMEOUT, 
             [this, onconnect, addr](std::shared_ptr<Event> event, short events){
                 OnConnect(event, events, addr, onconnect);
                 m_impl_connect_event_map.DelConnectEvent(event);

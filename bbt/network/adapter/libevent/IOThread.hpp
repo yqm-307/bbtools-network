@@ -46,17 +46,6 @@ public:
     // EventId RegisterEvent(std::shared_ptr<evEvent> event_ptr);
     std::shared_ptr<Event>  RegisterEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
 
-    /**
-     * @brief 与 RegisterEvent 相比为线程安全版本
-     * 
-     * @param fd 如果不是fd相关的事件，可以设置为0
-     * @param events 关注事件的类型，参考宏EV_TIMEOUT
-     * @param callback 事件发生时调用的回调函数
-     * @param args callback的参数（大部分情况使用函数对象即可）
-     * @return int 成功返回大于等于0的eventid，失败返回-1
-     */
-    std::shared_ptr<Event>  RegisterEventSafe(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
-
     const std::unique_ptr<EventLoop>& GetEventLoop() const;
 
 private:

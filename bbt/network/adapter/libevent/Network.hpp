@@ -33,13 +33,13 @@ class Network:
 {
     typedef std::shared_ptr<IOThread> ThreadSPtr;
 public:
-    Network(uint32_t sub_thread_num, const char* ip, short port);
+    Network(uint32_t sub_thread_num);
     virtual ~Network();
 
     virtual Errcode                 AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect_cb) override;
 
     /* 初始化并设置监听事件 */
-    Errcode                         StartListen(const OnAcceptCallback& onaccept_cb);
+    Errcode                         StartListen(const char* ip, short port, const OnAcceptCallback& onaccept_cb);
     /* 设置network错误信息回调 */
     void                            SetOnErrorHandle(const OnNetworkErrorCallback& onerror_cb);
     /* 开启所有线程 */

@@ -28,3 +28,9 @@ target_link_libraries(Test_Server ${MY_LIBS})
 
 add_executable(test1 test.cc)
 target_link_libraries(test1 ${MY_LIBS})
+
+add_executable(echo_server echo_server.cc)
+target_link_libraries(echo_server ${MY_LIBS})
+
+add_executable(echo_client echo_client.cc)
+target_link_libraries(echo_client ${MY_LIBS})

@@ -27,9 +27,9 @@ typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t
                                                                             OnRecvCallback;
 typedef std::function<void(ConnectionSPtr /*conn*/, const Errcode& /*err */, size_t /*send_len*/)>   
                                                                             OnSendCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnCloseCallback;
+typedef std::function<void(void* /*userdata*/, const bbt::net::IPAddress& )>OnCloseCallback;
 typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/, const Errcode&)>        OnErrorCallback;
+typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnErrorCallback;
 
 struct ConnCallbacks
 {
@@ -50,20 +50,18 @@ class Connection:
 public:
     virtual ~Connection();
 
-
     /* 设置Connection的回调行为 */
     void                    SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks);
-
     /* 设置空闲超时关闭Connection的时间 */
     void                    SetOpt_CloseTimeoutMS(int timeout_ms);
-
+    /* 设置用户数据 */
+    void                    SetOpt_UserData(void* userdata);
+    /* 读取用户数据 */
+    void                    GetUserData(void* userdata);
     /* 异步发送数据给对端 */
     int                     AsyncSend(const char* buf, size_t len);
-
     /* 关闭此连接 */
     virtual void            Close() override;
-
-
 
 private:
     Connection(
@@ -86,7 +84,7 @@ protected:
     virtual void            OnTimeout() override;
     virtual void            OnError(const Errcode& err) override;
 
-    int                     AsyncSendInThread();
+    int                     RegistASendEvent();
     int                     AppendOutputBuffer(const char* data, size_t len);
 private:
     std::shared_ptr<libevent::IOThread>
@@ -94,19 +92,17 @@ private:
     ConnCallbacks           m_callbacks;                // 回调函数
     std::shared_ptr<Event>  m_event{nullptr};           // 事件
     std::shared_ptr<Event>  m_send_event{nullptr};      // 发送事件
-    uint64_t                m_conn_last_active_timestamp{0}; // 连接最后一次活跃（发送、接收）的时间戳
 
     /**
      * 异步写需要做输出缓存，这里策略是无限扩张的输出缓存。
      */
-    bbt::buffer::Buffer     m_input_buffer;
     bbt::buffer::Buffer     m_output_buffer;
-    bool                    m_output_buffer_is_free{true};
+    std::atomic_bool        m_output_buffer_is_free{true}; // 是否被发送事件占用
     bbt::thread::lock::Mutex
                             m_output_mutex;
 
     int                     m_timeout_ms{CONNECTION_FREE_TIMEOUT_MS};           // 连接空闲超时事件
-    
+    void*                   m_userdata{nullptr};    
 };
 
 }

@@ -25,8 +25,10 @@ enum EventOpt : short
     TIMEOUT                 = EV_TIMEOUT,       // 事件超时时触发
     READABLE                = EV_READ,          // 套接字可读时触发
     WRITEABLE               = EV_WRITE,         // 套接字可写时触发
-    FD_CLOSE                = EV_CLOSED,        // 套接字关闭时触发
+    CLOSE                   = EV_CLOSED,        // 套接字关闭时触发
+    FINALIZE                = EV_FINALIZE,      // 对端关闭事件，相比Close支持更广，监听对端关闭请使用此事件
     PERSIST                 = EV_PERSIST,       // 设置事件监听事件为持续监听的，否则触发一次事件就结束
+    SINGAL                  = EV_SIGNAL,        // 系统事件
 };
 
 /**

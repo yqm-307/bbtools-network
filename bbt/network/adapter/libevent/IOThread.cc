@@ -86,11 +86,4 @@ std::shared_ptr<Event> IOThread::RegisterEvent(evutil_socket_t fd, short events,
     return event_sptr;
 }
 
-std::shared_ptr<Event> IOThread::RegisterEventSafe(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb)
-{
-    std::lock_guard<std::mutex> lock{m_mutex};
-    auto event_sptr = RegisterEvent(fd, events, onevent_cb);
-    return event_sptr;
-}
-
 }// namespace end

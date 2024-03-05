@@ -12,7 +12,7 @@ int main()
 {
     Assert(bbt::network::GlobalInit());
 
-    Network network{1, "127.0.0.1", 10011};
+    Network network{1};
     std::vector<ConnectionSPtr> conn_vec;
 
     network.AsyncConnect("127.0.0.1", 10010,
@@ -25,6 +25,9 @@ int main()
         bbt::network::libevent::ConnCallbacks callback;
         callback.on_err_callback = [](auto, const Errcode& err){
             printf("[onerr] %s\n", err.CWhat());
+        };
+        callback.on_timeout_callback = [](auto conn){
+            conn->Close();
         };
 
         ptr->SetOpt_Callbacks(callback);

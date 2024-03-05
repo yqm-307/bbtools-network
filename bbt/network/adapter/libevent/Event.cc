@@ -45,16 +45,18 @@ Event::~Event()
 Errcode Event::StartListen(uint32_t timeout)
 {
     timeval     tm;
+    timeval*    tmptr = nullptr;
     int         err;
     m_timeout = timeout;
 
-    evutil_timerclear(&tm);
     if (m_timeout > 0) {
+        evutil_timerclear(&tm);
         tm.tv_sec  = timeout / 1000;
         tm.tv_usec = (timeout % 1000) * 1000;
+        tmptr = &tm;
     }
 
-    err = event_add(m_raw_event, &tm);
+    err = event_add(m_raw_event, tmptr);
     if (err != 0) {
         return Errcode{"event_add() failed!"};
     }

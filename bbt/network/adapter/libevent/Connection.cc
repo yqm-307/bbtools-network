@@ -19,8 +19,7 @@ namespace bbt::network::libevent
 
 Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, bbt::net::IPAddress& ipaddr)
     :ConnectionBase(socket, ipaddr),
-    m_current_thread(thread),
-    m_conn_last_active_timestamp(bbt::timer::clock::now().time_since_epoch().count())
+    m_current_thread(thread)
 {
 }
 
@@ -40,6 +39,15 @@ void Connection::SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks)
     m_callbacks = callbacks;
 }
 
+void Connection::SetOpt_UserData(void* userdata)
+{
+    m_userdata = userdata;
+}
+
+void Connection::GetUserData(void* userdata)
+{
+    userdata = m_userdata;
+}
 
 void Connection::OnRecv(const char* data, size_t len)
 {
@@ -62,7 +70,7 @@ void Connection::OnSend(const Errcode& err, size_t succ_len)
 void Connection::OnClose()
 {
     if (m_callbacks.on_close_callback) {
-        m_callbacks.on_close_callback(shared_from_this());
+        m_callbacks.on_close_callback(m_userdata, GetPeerAddress());
     }
 
     OnError(Errcode{"on closed!, but no close callback!"});
@@ -79,7 +87,7 @@ void Connection::OnTimeout()
 void Connection::OnError(const Errcode& err)
 {
     if (m_callbacks.on_err_callback) {
-        m_callbacks.on_err_callback(shared_from_this(), err);
+        m_callbacks.on_err_callback(m_userdata, err);
     }
 }
 
@@ -98,7 +106,10 @@ void Connection::Close()
 
 void Connection::RunInEventLoop()
 {
-    m_event = m_current_thread->RegisterEventSafe(GetSocket(), EV_CLOSED | EV_PERSIST | EV_READ, 
+    m_event = m_current_thread->RegisterEvent(GetSocket(),
+    EventOpt::CLOSE |       // 关闭事件
+    EventOpt::PERSIST |     // 持久化
+    EventOpt::READABLE,     // 可读事件
     [this](std::shared_ptr<Event> event, short events){
         OnEvent(event->GetSocket(), events);
     });
@@ -108,15 +119,17 @@ void Connection::RunInEventLoop()
 
 void Connection::OnEvent(evutil_socket_t sockfd, short event)
 {
-    if (sockfd & EventOpt::READABLE) {
+    if (event & EventOpt::READABLE) {
+        /* 尝试读取套接字数据，如果对端关闭，一并关闭此连接 */
         auto err = Recv(sockfd);
         if (!err) OnError(err);
-    // } else if (sockfd & EventOpt::WRITEABLE) {
-        // OnSend();
-    } else if (sockfd & EventOpt::TIMEOUT) {
-        OnTimeout();
-    } else if (sockfd & EventOpt::FD_CLOSE) {
-        OnClose();
+        if (err.Type() == ErrType::ERRTYPE_NETWORK_RECV_EOF)
+            Close();
+    } else if (event & EventOpt::TIMEOUT) {
+        /* 当连接空闲超时时，直接通过用户注册的回调通知用户 */
+        Timeout();
+    } else if (event & EventOpt::CLOSE) {
+        Close();
     }
 }
 
@@ -156,6 +169,8 @@ Errcode Connection::Recv(evutil_socket_t sockfd)
         return errcode;
 
     OnRecv(buffer_begin, buffer_len);
+
+    return FASTERR_NOTHING;
 }
 
 size_t Connection::Send(const char* buf, size_t len)
@@ -178,9 +193,13 @@ size_t Connection::Send(const char* buf, size_t len)
 int Connection::AsyncSend(const char* buf, size_t len)
 {
     /**
-     *  异步发送数据
+     *  此函数大概率是跨线程发送的，因此内部保证线程安全
+     *  异步发送数据时有下列情况：
      *  （1）当有正在发送中的数据，则将数据追加到输出缓存中
      *  （2）当没有发送中的数据，则触发一次发送数据
+     * 
+     *  同时在发送事件完成后，会检测output buffer中是否有
+     *  待发送数据，如果有，则继续上述循环直到buffer为空.
      */
     if (!IsConnected()) {
         std::string info = bbt::log::format("send error! connection is disconnect! sockfd=%d, status=%d", GetSocket(), IsConnected() ? 1 : 0);
@@ -188,16 +207,18 @@ int Connection::AsyncSend(const char* buf, size_t len)
         return -1;
     }
 
-    bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
-
-    if (!m_output_buffer_is_free) {
+    /**
+     *  后续调用不可以注册发送事件，只能追写output buffer，除非
+     *  上一个发送事件已经结束
+     */
+    bool not_free = true;
+    if (m_output_buffer_is_free.compare_exchange_strong(not_free, false)) {
         int append_len = AppendOutputBuffer(buf, len);
-        if (append_len != len) {
-            return -1;
-        }
+        return (append_len != len) ? (-1) : (0);
     }
 
-    AsyncSendInThread();
+    /* 如果此时没有进行中的发送事件，则注册一个新的发送事件 */
+    RegistASendEvent();
     return 0;
 }
 
@@ -212,46 +233,44 @@ int Connection::AppendOutputBuffer(const char* data, size_t len)
     return change_num > 0 ? change_num : 0;
 }
 
-int Connection::AsyncSendInThread()
+int Connection::RegistASendEvent()
 {
     /**
-     *  每次发送结束后，回检测一下输出缓存是否会有数据。
-     *  如果有再次注册一个send事件
+     *  此事件只同时存在一个，其作用是每次发送结束后，检测一下
+     *  输出缓存是否会有数据，并做以下行为：
+     *      （1）output buffer 有数据，交换buffer，该事件继续运行；
+     *      （2）output buffer 没有数据，取消此事件，允许下次追加output
+     *          buffer时注册发送事件.
      */
+    AssertWithInfo(m_send_event == nullptr, "has a wrong!");
     bbt::buffer::Buffer buffer;
+    /* Swap 是无额外开销的 */
     m_output_buffer.Swap(buffer);
 
-    size_t m_output_prev_size = buffer.DataSize();
-
-    auto weak_this = weak_from_this();
-    auto connid = GetMemberId();
-    m_send_event = m_current_thread->RegisterEventSafe(GetSocket(), EV_WRITE,
-    [this, buffer](std::shared_ptr<Event> event, short events){
+    m_send_event = m_current_thread->RegisterEvent(GetSocket(), EventOpt::WRITEABLE | EventOpt::PERSIST,
+    [this, &buffer](std::shared_ptr<Event> event, short events){
         Errcode     err{"", ErrType::ERRTYPE_NOTHING};
         int         size = 0;
-
-        size = Send(buffer.Peek(), buffer.DataSize());
 
         if (events & EventOpt::TIMEOUT) {
             err.SetType(ErrType::ERRTYPE_SEND_TIMEOUT);
             err.SetInfo("send timeout!");
-        } else if (!(events & EventOpt::WRITEABLE)) {
-            err.SetType(ErrType::ERRTYPE_ERROR);
-            err.SetInfo("invalid event!");
+        } else if (events & EventOpt::WRITEABLE) {
+            size = Send(buffer.Peek(), buffer.DataSize());
         }
 
         OnSend(err, size);
 
-        bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
-        DebugAssert(!m_output_buffer_is_free);
-
-        if (m_output_buffer.DataSize() > 0)
-            AsyncSendInThread();
-        else
-            m_output_buffer_is_free = true;
+        /* 有待发送数据，交换buffer，继续发送；否则取消监听事件，释放标志位 */
+        if (m_output_buffer.DataSize() <= 0) {
+            m_send_event->CancelListen();
+            m_send_event = nullptr;
+            m_output_buffer_is_free.exchange(true); // 允许注册发送事件
+        } else {
+            buffer.Swap(m_output_buffer);
+        }
     });
 
-    m_output_buffer_is_free = false;
     m_send_event->StartListen(SEND_DATA_TIMEOUT_MS);
     return 0;
 }
@@ -259,7 +278,9 @@ int Connection::AsyncSendInThread()
 
 Errcode Connection::Timeout()
 {
-
+    OnTimeout();
+    Close();
+    return FASTERR_NOTHING;
 }
 
 } // namespace bbt::network::libevent
