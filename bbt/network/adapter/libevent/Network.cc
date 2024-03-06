@@ -184,53 +184,56 @@ void Network::OnAccept(evutil_socket_t fd, short events, OnAcceptCallback onacce
     }
 }
 
-Errcode Network::AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect)
+Errcode Network::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
 {
+    if (timeout_ms <= 0)
+        return Errcode{"async connect, param timeout_ms can`t less then 0!"};
+
     int socket = bbt::net::Util::CreateConnect(ip, port, true);
     if (socket < 0)
         return Errcode{"create socket failed!"};
 
     bbt::net::IPAddress addr{ip, port};
-
-    auto event = m_main_thread->RegisterEvent(socket, EventOpt::WRITEABLE | EventOpt::TIMEOUT,
-    [this, onconnect, addr](std::shared_ptr<Event> event, short events){
-        OnConnect(event, events, addr, onconnect);
-        m_impl_connect_event_map.DelConnectEvent(event);
+    auto timeout_timestamp = bbt::timer::clock::nowAfter(bbt::timer::clock::ms(timeout_ms));
+    auto event = m_main_thread->RegisterEvent(socket, EventOpt::WRITEABLE | EventOpt::TIMEOUT | EventOpt::PERSIST,
+    [this, onconnect, addr, timeout_timestamp](std::shared_ptr<Event> event, short events){
+        OnConnect(event, events, timeout_timestamp, addr, onconnect);
     });
 
-    event->StartListen(10);
+    event->StartListen(CONNECT_TIMEOUT_MS);
     m_impl_connect_event_map.AddConnectEvent(event);
 
     return FASTERR_NOTHING;
 }
 
-void Network::OnConnect(std::shared_ptr<Event> event, short events, const bbt::net::IPAddress& addr, interface::OnConnectCallback onconnect)
+void Network::OnConnect(
+    std::shared_ptr<Event> event,
+    short events,
+    bbt::timer::clock::Timestamp<bbt::timer::clock::ms> timeout,
+    const bbt::net::IPAddress& addr,
+    interface::OnConnectCallback onconnect)
 {
     int sockfd = event->GetSocket();
 
-    if (events & EventOpt::TIMEOUT) {
+    if (events & EventOpt::TIMEOUT ||  bbt::timer::clock::expired<bbt::timer::clock::ms>(timeout))
+    {        
         onconnect(Errcode{"connect client timeout!", ErrType::ERRTYPE_CONNECT_TIMEOUT}, nullptr);
         ::close(sockfd);
+        m_impl_connect_event_map.DelConnectEvent(event);
         return;
     }
         
     if (events & EventOpt::WRITEABLE) {
         auto err = DoConnect(sockfd, addr);
         if (!err && err.Type() == ErrType::ERRTYPE_CONNECT_TRY_AGAIN) {
-            auto event = m_main_thread->RegisterEvent(sockfd, EventOpt::WRITEABLE | EventOpt::TIMEOUT, 
-            [this, onconnect, addr](std::shared_ptr<Event> event, short events){
-                OnConnect(event, events, addr, onconnect);
-                m_impl_connect_event_map.DelConnectEvent(event);
-            });
-
-            event->StartListen(CONNECT_TIMEOUT_MS);
-            m_impl_connect_event_map.AddConnectEvent(event);
+            return;
         }
 
         if (err) {
             auto conn_sptr = Create<libevent::Connection>(GetAThread(), sockfd, addr);
             onconnect(FASTERR_NOTHING, conn_sptr);
             conn_sptr->RunInEventLoop();
+            m_impl_connect_event_map.DelConnectEvent(event);
         }
     }
 }
@@ -239,8 +242,9 @@ Errcode Network::DoConnect(evutil_socket_t fd, const bbt::net::IPAddress& addr)
 {
     if (0 > ::connect(fd, addr.getsockaddr(), addr.getsocklen())) {
         int err = evutil_socket_geterror(fd);
-        if (err == EINTR || err == EINPROGRESS)
+        if (err == EINTR || err == EINPROGRESS) {
             return Errcode{"", ErrType::ERRTYPE_CONNECT_TRY_AGAIN};
+        }
 
         if (err == ECONNREFUSED)
             return Errcode{"", ErrType::ERRTYPE_CONNECT_CONNREFUSED};

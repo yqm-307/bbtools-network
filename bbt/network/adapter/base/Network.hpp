@@ -30,7 +30,7 @@ public:
 
     virtual std::pair<Errcode, interface::INetConnectionSPtr> Accept(int listen_fd) override;
 
-    virtual Errcode AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect_cb) override;
+    virtual Errcode AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
 
     virtual Errcode AsyncAccept(int listen_fd, const interface::OnAcceptCallback& onaccept_cb) override;
 

@@ -47,10 +47,11 @@ public:
      * 
      * @param ip            对端ip
      * @param port          对端端口
+     * @param timeout_ms    连接超时时间
      * @param onconnect_cb  连接结果回调
      * @return Errcode 
      */
-    virtual Errcode AsyncConnect(const char* ip, short port, const OnConnectCallback& onconnect_cb) = 0;
+    virtual Errcode AsyncConnect(const char* ip, short port, int timeout_ms, const OnConnectCallback& onconnect_cb) = 0;
 
     /**
      * @brief 接收一个连接，结果通过onaccept_cb通知调用者；此函数调用后

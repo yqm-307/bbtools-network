@@ -37,7 +37,7 @@ namespace bbt::network
 // 发送超时失败
 #define SEND_DATA_TIMEOUT_MS 2000
 // 连接超时
-#define CONNECT_TIMEOUT_MS 5000
+#define CONNECT_TIMEOUT_MS 2000
 
 // 连接状态枚举
 enum ConnStatus

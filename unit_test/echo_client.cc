@@ -38,21 +38,30 @@ void InitCallbacks()
 
 int main(int args, char* argv[])
 {
-    if (args != 4) {
-        printf("[usage] ./{exec_name} {ip} {port}");
+    int console_debug_flag = 1;
+    BBT_CONFIG_QUICK_SET_DYNAMIC_ENTRY(int, &console_debug_flag, bbt::config::BBT_LOG_STDOUT_OPEN);
+    Assert(bbt::network::GlobalInit());
+    if (args != 3) {
+        printf("[usage] ./{exec_name} {ip} {port}\n");
         exit(-1);
     }
     int     thread_num  = 1;
-    char*   ip          = argv[3];
-    int     port        = std::stoi(argv[4]);
+    char*   ip          = argv[1];
+    int     port        = std::stoi(argv[2]);
+
 
     Network network{thread_num};
     ConnectionSPtr connection = nullptr;
     bbt::thread::lock::CountDownLatch count_down_latch{1};
     const char* data = "hello world";
 
-    network.AsyncConnect(ip, port,
+    network.AsyncConnect(ip, port, 1000,
     [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
+        if (!err) {
+            BBT_BASE_LOG_ERROR("%s", err.CWhat());
+            count_down_latch.down();
+            return;
+        }
         auto sptr = std::static_pointer_cast<libevent::Connection>(new_conn);
         sptr->SetOpt_Callbacks(callbacks);
 
@@ -60,8 +69,11 @@ int main(int args, char* argv[])
         count_down_latch.down();
     });
     
-    
+    network.Start();
     count_down_latch.wait();
+
+    if (connection == nullptr)
+        return -1;
 
     auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(5));
     while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {

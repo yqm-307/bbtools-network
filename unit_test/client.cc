@@ -15,7 +15,7 @@ int main()
     Network network{1};
     std::vector<ConnectionSPtr> conn_vec;
 
-    network.AsyncConnect("127.0.0.1", 10010,
+    network.AsyncConnect("127.0.0.1", 10010, 1000,
     [&network, &conn_vec](Errcode err, INetConnectionSPtr i_sptr){
         if (!err) {
             printf("connect err! %s\n", err.CWhat());

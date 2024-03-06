@@ -81,13 +81,16 @@ private:
 
 int main(int args, char* argv[])
 {
+    int console_debug_flag = 1;
+    BBT_CONFIG_QUICK_SET_DYNAMIC_ENTRY(int, &console_debug_flag, bbt::config::BBT_LOG_STDOUT_OPEN);
+    Assert(bbt::network::GlobalInit());
     if (args != 4) {
         printf("[usage] ./{exec_name} {thread_num} {ip} {port}");
         exit(-1);
     }
-    int     thread_num  = std::stoi(argv[2]);
-    char*   ip          = argv[3];
-    int     port        = std::stoi(argv[4]);
+    int     thread_num  = std::stoi(argv[1]);
+    char*   ip          = argv[2];
+    int     port        = std::stoi(argv[3]);
     
     EchoClient server{thread_num, ip, port};
 

@@ -36,7 +36,7 @@ public:
     Network(uint32_t sub_thread_num);
     virtual ~Network();
 
-    virtual Errcode                 AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect_cb) override;
+    virtual Errcode                 AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
 
     /* 初始化并设置监听事件 */
     Errcode                         StartListen(const char* ip, short port, const OnAcceptCallback& onaccept_cb);
@@ -54,7 +54,12 @@ protected:
     void                            OnAccept(evutil_socket_t fd, short events, OnAcceptCallback cb);
     void                            OnError(const Errcode& err);
     Errcode                         DoConnect(evutil_socket_t fd, const bbt::net::IPAddress& addr);
-    void                            OnConnect(std::shared_ptr<Event> event, short events, const bbt::net::IPAddress& addr, interface::OnConnectCallback cb);
+    void                            OnConnect(
+                                    std::shared_ptr<Event>  event,
+                                    short                   events,
+                                    bbt::timer::clock::Timestamp<bbt::timer::clock::ms> timeout,
+                                    const bbt::net::IPAddress&  addr,
+                                    interface::OnConnectCallback cb);
 
     ThreadSPtr                      GetAThread();
 

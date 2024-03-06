@@ -31,7 +31,7 @@ std::pair<Errcode, interface::INetConnectionSPtr> NetworkBase::Accept(int listen
     return {FASTERR_ERROR("empty implemention!"), nullptr};
 }
 
-Errcode NetworkBase::AsyncConnect(const char* ip, short port, const interface::OnConnectCallback& onconnect_cb)
+Errcode NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }
