@@ -12,17 +12,17 @@ public:
         :m_network(thread_num)
     {
         m_network.StartListen(ip, port, [this](auto err, auto sptr){
-            if (!err)
+            if (err)
                 OnNewConnection(sptr);
             else
-                BBT_BASE_LOG_ERROR("%s", err.CWhat());
+                BBT_BASE_LOG_ERROR("[%s]", err.CWhat());
         });
 
         m_callback.on_close_callback = 
         [this](void* udata, const bbt::net::IPAddress& addr) {
             UData* data = reinterpret_cast<UData*>(udata);
             BBT_BASE_LOG_INFO("[%d], %s", data->connid, addr.GetIPPort().c_str());
-            m_conn_map.erase(data->connid);
+            // m_conn_map.erase(data->connid);
         };
 
         m_callback.on_err_callback =
