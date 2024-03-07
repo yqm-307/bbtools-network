@@ -70,6 +70,7 @@ protected:
 
     void OnNewConnection(libevent::ConnectionSPtr conn)
     {
+        BBT_BASE_LOG_INFO("a new connection! %s", conn->GetPeerAddress().GetIPPort().c_str());
         InitConn(conn);
         m_conn_map.insert(std::make_pair(conn->GetConnId(), conn));
     }

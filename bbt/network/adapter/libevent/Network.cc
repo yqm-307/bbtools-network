@@ -151,8 +151,8 @@ std::pair<Errcode, libevent::ConnectionSPtr> Network::DoAccept(int listenfd)
     evutil_socket_t     fd;
     sockaddr_in         addr;
     socklen_t           len = sizeof(addr);
-
     fd = ::accept(m_listen_fd, reinterpret_cast<sockaddr*>(&addr), &len);
+
 
     bbt::net::IPAddress endpoint;
     endpoint.set(addr);

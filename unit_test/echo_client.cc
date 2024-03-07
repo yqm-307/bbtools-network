@@ -26,7 +26,7 @@ void InitCallbacks()
 
     callbacks.on_send_callback =
     [](libevent::ConnectionSPtr conn, const Errcode& err, size_t send_len){
-        BBT_BASE_LOG_DEBUG("[%d] end succ=%d", conn->GetConnId(), send_len);
+        BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
     };
 
     callbacks.on_timeout_callback =
@@ -54,6 +54,7 @@ int main(int args, char* argv[])
     ConnectionSPtr connection = nullptr;
     bbt::thread::lock::CountDownLatch count_down_latch{1};
     const char* data = "hello world";
+    InitCallbacks();
 
     network.AsyncConnect(ip, port, 1000,
     [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
@@ -78,5 +79,6 @@ int main(int args, char* argv[])
     auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(5));
     while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {
         connection->AsyncSend(data, sizeof(data));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }   

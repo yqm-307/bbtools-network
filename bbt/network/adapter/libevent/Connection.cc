@@ -183,8 +183,8 @@ size_t Connection::Send(const char* buf, size_t len)
                 Close();
                 return -1;
             }
-            remain -= n;
         }
+        remain -= n;
     }
 
     return (len - remain);
@@ -212,8 +212,8 @@ int Connection::AsyncSend(const char* buf, size_t len)
      *  上一个发送事件已经结束
      */
     bool not_free = true;
-    if (m_output_buffer_is_free.compare_exchange_strong(not_free, false)) {
-        int append_len = AppendOutputBuffer(buf, len);
+    int append_len = AppendOutputBuffer(buf, len);
+    if (!m_output_buffer_is_free.compare_exchange_strong(not_free, false)) {
         return (append_len != len) ? (-1) : (0);
     }
 
@@ -224,6 +224,7 @@ int Connection::AsyncSend(const char* buf, size_t len)
 
 int Connection::AppendOutputBuffer(const char* data, size_t len)
 {
+    bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
     auto before_size = m_output_buffer.DataSize();
     m_output_buffer.WriteString(data, len);
     auto after_size = m_output_buffer.DataSize();
@@ -242,7 +243,8 @@ int Connection::RegistASendEvent()
      *      （2）output buffer 没有数据，取消此事件，允许下次追加output
      *          buffer时注册发送事件.
      */
-    AssertWithInfo(m_send_event == nullptr, "has a wrong!");
+    AssertWithInfo(!m_output_buffer_is_free.load(), "output buffer must be false!");
+    AssertWithInfo(!m_send_event , "has a wrong!");
     bbt::buffer::Buffer buffer;
     /* Swap 是无额外开销的 */
     m_output_buffer.Swap(buffer);
