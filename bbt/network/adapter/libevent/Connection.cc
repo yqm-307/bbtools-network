@@ -112,12 +112,15 @@ void Connection::Close()
 
 void Connection::RunInEventLoop()
 {
+    auto weak_this = weak_from_this();
     m_event = m_current_thread->RegisterEvent(GetSocket(),
     EventOpt::CLOSE |       // 关闭事件
     EventOpt::PERSIST |     // 持久化
     EventOpt::READABLE,     // 可读事件
-    [this](std::shared_ptr<Event> event, short events){
-        OnEvent(event->GetSocket(), events);
+    [weak_this](std::shared_ptr<Event> event, short events){
+        auto pthis = weak_this.lock();
+        if (!pthis) return;
+        pthis->OnEvent(event->GetSocket(), events);
     });
 
     m_event->StartListen(m_timeout_ms);
@@ -258,34 +261,43 @@ int Connection::RegistASendEvent()
         buffer_sptr->Swap(m_output_buffer);
     }
 
+    auto weak_this = weak_from_this();
     m_send_event = m_current_thread->RegisterEvent(GetSocket(), EventOpt::WRITEABLE | EventOpt::PERSIST,
-    [this, buffer_sptr](std::shared_ptr<Event> event, short events){
-        Errcode     err{"", ErrType::ERRTYPE_NOTHING};
-        int         size = 0;
-
-        if (events & EventOpt::TIMEOUT) {
-            err.SetType(ErrType::ERRTYPE_SEND_TIMEOUT);
-            err.SetInfo("send timeout!");
-        } else if (events & EventOpt::WRITEABLE) {
-            size = Send(buffer_sptr->Peek(), buffer_sptr->DataSize());
-        }
-
-        OnSend(err, size);
-
-        /* 当连接已经关闭后，也退出事件；
-        有待发送数据，交换buffer，继续发送；否则取消监听事件，释放标志位 */
-        if (IsClosed() || m_output_buffer.DataSize() <= 0) {
-            m_send_event->CancelListen();
-            m_send_event = nullptr;
-            m_output_buffer_is_free.exchange(true); // 允许注册发送事件
-        } else {
-            bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
-            buffer_sptr->Swap(m_output_buffer);
-        }
+    [weak_this, buffer_sptr](std::shared_ptr<Event> event, short events){
+        auto pthis = weak_this.lock();
+        if (!pthis) return;
+        pthis->OnSendEvent(buffer_sptr, event, events);
     });
 
     m_send_event->StartListen(SEND_DATA_TIMEOUT_MS);
     return 0;
+}
+
+void Connection::OnSendEvent(std::shared_ptr<bbt::buffer::Buffer> output_buffer, std::shared_ptr<Event> event, short events)
+{
+    Errcode     err{"", ErrType::ERRTYPE_NOTHING};
+    int         size = 0;
+
+    if (IsClosed()) return;
+    if (events & EventOpt::TIMEOUT) {
+        err.SetType(ErrType::ERRTYPE_SEND_TIMEOUT);
+        err.SetInfo("send timeout!");
+    } else if (events & EventOpt::WRITEABLE) {
+        size = Send(output_buffer->Peek(), output_buffer->DataSize());
+    }
+
+    OnSend(err, size);
+
+    /* 当连接已经关闭后，也退出事件；
+    有待发送数据，交换buffer，继续发送；否则取消监听事件，释放标志位 */
+    if (IsClosed() || m_output_buffer.DataSize() <= 0) {
+        m_send_event->CancelListen();
+        m_send_event = nullptr;
+        m_output_buffer_is_free.exchange(true); // 允许注册发送事件
+    } else {
+        bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
+        output_buffer->Swap(m_output_buffer);
+    }
 }
 
 

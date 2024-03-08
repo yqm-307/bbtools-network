@@ -22,7 +22,7 @@ public:
         [this](void* udata, const bbt::net::IPAddress& addr) {
             UData* data = reinterpret_cast<UData*>(udata);
             BBT_BASE_LOG_INFO("onclose [%d], %s", data->connid, addr.GetIPPort().c_str());
-            // m_conn_map.erase(data->connid);
+            m_conn_map.erase(data->connid);
         };
 
         m_callback.on_err_callback =

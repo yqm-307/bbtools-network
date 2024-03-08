@@ -73,6 +73,7 @@ protected:
     /* 启动Connection */
     void                    RunInEventLoop();
     void                    OnEvent(evutil_socket_t sockfd, short events);
+    void                    OnSendEvent(std::shared_ptr<bbt::buffer::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
 
     Errcode                 Recv(evutil_socket_t sockfd);
     size_t                  Send(const char* buf, size_t len);
@@ -90,6 +91,11 @@ private:
     std::shared_ptr<libevent::IOThread>
                             m_current_thread{nullptr};
     ConnCallbacks           m_callbacks;                // 回调函数
+    /**
+     * 一连接一事件，
+     * 1、如果使用多个事件会有时序问题
+     * 2、连接内部派发对于事件处理函数，更简洁
+     */
     std::shared_ptr<Event>  m_event{nullptr};           // 事件
     std::shared_ptr<Event>  m_send_event{nullptr};      // 发送事件
 

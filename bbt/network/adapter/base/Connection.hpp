@@ -59,7 +59,7 @@ protected:
 private:
     int                     m_socket_fd{-1};
     bbt::net::IPAddress     m_peer_addr;
-    ConnStatus              m_conn_status{ConnStatus::DEFAULT};
+    volatile ConnStatus     m_conn_status{ConnStatus::DEFAULT};
 
 };
 
