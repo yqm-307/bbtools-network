@@ -114,7 +114,9 @@ Errcode Network::StartListen(const char* ip, short port, const OnAcceptCallback&
     if (m_onaccept_event != nullptr)
         return Errcode{"repeat regist event!"};
 
-    m_onaccept_event = m_main_thread->RegisterEvent(m_listen_fd, EventOpt::READABLE, 
+    m_onaccept_event = m_main_thread->RegisterEvent(
+        m_listen_fd,
+        EventOpt::READABLE | EventOpt::PERSIST,
     [this, onaccept_cb](std::shared_ptr<Event> event, short events){
         OnAccept(event->GetSocket(), events, onaccept_cb);
     });

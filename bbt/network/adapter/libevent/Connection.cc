@@ -51,37 +51,41 @@ void Connection::GetUserData(void* userdata)
 
 void Connection::OnRecv(const char* data, size_t len)
 {
-    if (m_callbacks.on_recv_callback) {
-        m_callbacks.on_recv_callback(shared_from_this(), data, len);
+    if (!m_callbacks.on_recv_callback) {
+        OnError(Errcode{"on recv!, but no recv callback!"});
+        return;
     }
 
-    OnError(Errcode{"on recv!, but no recv callback!"});
+        m_callbacks.on_recv_callback(shared_from_this(), data, len);
 }
 
 void Connection::OnSend(const Errcode& err, size_t succ_len)
 {
-    if (m_callbacks.on_send_callback) {
-        m_callbacks.on_send_callback(shared_from_this(), err, succ_len);
+    if (!m_callbacks.on_send_callback) {
+        OnError(Errcode{"on send!, but no send callback!"});
+        return;
     }
 
-    OnError(Errcode{"on send!, but no send callback!"});
+    m_callbacks.on_send_callback(shared_from_this(), err, succ_len);
 }
 
 void Connection::OnClose()
 {
-    if (m_callbacks.on_close_callback) {
-        m_callbacks.on_close_callback(m_userdata, GetPeerAddress());
+    if (!m_callbacks.on_close_callback) {
+        OnError(Errcode{"on closed!, but no close callback!"});
+        return;
     }
 
-    OnError(Errcode{"on closed!, but no close callback!"});
+    m_callbacks.on_close_callback(m_userdata, GetPeerAddress());
 }
 
 void Connection::OnTimeout()
 {
-    if (m_callbacks.on_timeout_callback) {
-        m_callbacks.on_timeout_callback(shared_from_this());
+    if (!m_callbacks.on_timeout_callback) {
+        OnError(Errcode{"on timeout!, but no timeout callback!"});
+        return;
     }
-    OnError(Errcode{"on timeout!, but no timeout callback!"});
+    m_callbacks.on_timeout_callback(shared_from_this());
 }
 
 void Connection::OnError(const Errcode& err)

@@ -64,6 +64,7 @@ int main(int args, char* argv[])
             return;
         }
         auto sptr = std::static_pointer_cast<libevent::Connection>(new_conn);
+        BBT_BASE_LOG_INFO("async connect succ! peeraddr=%s", sptr->GetPeerAddress().GetIPPort().c_str());
         sptr->SetOpt_Callbacks(callbacks);
 
         connection = sptr;
