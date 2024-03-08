@@ -20,8 +20,7 @@ void InitCallbacks()
 
     callbacks.on_recv_callback =
     [](libevent::ConnectionSPtr sptr, const char* data, size_t len){
-        BBT_BASE_LOG_DEBUG("[%s]", data);
-        sptr->AsyncSend(data, len);
+        BBT_BASE_LOG_DEBUG("onrecv succ, size=%d", len);
     };
 
     callbacks.on_send_callback =
@@ -79,7 +78,7 @@ int main(int args, char* argv[])
 
     auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(5));
     while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {
-        connection->AsyncSend(data, sizeof(data));
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        connection->AsyncSend(data, strlen(data));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }   

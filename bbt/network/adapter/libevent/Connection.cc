@@ -101,6 +101,8 @@ void Connection::Close()
         return;
 
     auto err = m_event->CancelListen();
+    if (m_send_event)
+        m_send_event->CancelListen();
     if (!err) OnError(err);
     
     CloseSocket();
@@ -172,7 +174,7 @@ Errcode Connection::Recv(evutil_socket_t sockfd)
     if (!errcode)
         return errcode;
 
-    OnRecv(buffer_begin, buffer_len);
+    OnRecv(buffer_begin, read_len);
 
     return FASTERR_NOTHING;
 }
@@ -249,12 +251,15 @@ int Connection::RegistASendEvent()
      */
     AssertWithInfo(!m_output_buffer_is_free.load(), "output buffer must be false!");
     AssertWithInfo(!m_send_event , "has a wrong!");
-    bbt::buffer::Buffer buffer;
+    auto buffer_sptr = std::make_shared<bbt::buffer::Buffer>();
     /* Swap 是无额外开销的 */
-    m_output_buffer.Swap(buffer);
+    {
+        bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
+        buffer_sptr->Swap(m_output_buffer);
+    }
 
     m_send_event = m_current_thread->RegisterEvent(GetSocket(), EventOpt::WRITEABLE | EventOpt::PERSIST,
-    [this, &buffer](std::shared_ptr<Event> event, short events){
+    [this, buffer_sptr](std::shared_ptr<Event> event, short events){
         Errcode     err{"", ErrType::ERRTYPE_NOTHING};
         int         size = 0;
 
@@ -262,18 +267,20 @@ int Connection::RegistASendEvent()
             err.SetType(ErrType::ERRTYPE_SEND_TIMEOUT);
             err.SetInfo("send timeout!");
         } else if (events & EventOpt::WRITEABLE) {
-            size = Send(buffer.Peek(), buffer.DataSize());
+            size = Send(buffer_sptr->Peek(), buffer_sptr->DataSize());
         }
 
         OnSend(err, size);
 
-        /* 有待发送数据，交换buffer，继续发送；否则取消监听事件，释放标志位 */
-        if (m_output_buffer.DataSize() <= 0) {
+        /* 当连接已经关闭后，也退出事件；
+        有待发送数据，交换buffer，继续发送；否则取消监听事件，释放标志位 */
+        if (IsClosed() || m_output_buffer.DataSize() <= 0) {
             m_send_event->CancelListen();
             m_send_event = nullptr;
             m_output_buffer_is_free.exchange(true); // 允许注册发送事件
         } else {
-            buffer.Swap(m_output_buffer);
+            bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
+            buffer_sptr->Swap(m_output_buffer);
         }
     });
 

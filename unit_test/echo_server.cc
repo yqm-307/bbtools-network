@@ -21,7 +21,7 @@ public:
         m_callback.on_close_callback = 
         [this](void* udata, const bbt::net::IPAddress& addr) {
             UData* data = reinterpret_cast<UData*>(udata);
-            BBT_BASE_LOG_INFO("[%d], %s", data->connid, addr.GetIPPort().c_str());
+            BBT_BASE_LOG_INFO("onclose [%d], %s", data->connid, addr.GetIPPort().c_str());
             // m_conn_map.erase(data->connid);
         };
 
@@ -33,13 +33,13 @@ public:
 
         m_callback.on_recv_callback =
         [](libevent::ConnectionSPtr sptr, const char* data, size_t len){
-            BBT_BASE_LOG_DEBUG("[%s]", data);
+            BBT_BASE_LOG_DEBUG("onrecv succ, size=%d", len);
             sptr->AsyncSend(data, len);
         };
 
         m_callback.on_send_callback =
         [](libevent::ConnectionSPtr conn, const Errcode& err, size_t send_len){
-            BBT_BASE_LOG_DEBUG("[%d] end succ=%d", conn->GetConnId(), send_len);
+            BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
         };
 
         m_callback.on_timeout_callback =
