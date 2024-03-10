@@ -186,7 +186,8 @@ size_t Connection::Send(const char* buf, size_t len)
 {
     int remain = len;
     while (remain > 0) {
-        int n = ::write(GetSocket(), (buf + (len - remain)), remain);
+        int n = ::send(GetSocket(), (buf + (len - remain)), remain, MSG_NOSIGNAL);
+        // int n = ::write(GetSocket(), (buf + (len - remain)), remain);
         if (n < 0) {
             if (errno == EPIPE) {
                 Close();

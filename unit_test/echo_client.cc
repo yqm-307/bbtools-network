@@ -44,12 +44,11 @@ int main(int args, char* argv[])
         printf("[usage] ./{exec_name} {ip} {port}\n");
         exit(-1);
     }
-    int     thread_num  = 1;
     char*   ip          = argv[1];
     int     port        = std::stoi(argv[2]);
 
 
-    Network network{thread_num};
+    Network network{1};
     ConnectionSPtr connection = nullptr;
     bbt::thread::lock::CountDownLatch count_down_latch{1};
     const char* data = "hello world";
@@ -79,6 +78,6 @@ int main(int args, char* argv[])
     auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(3));
     while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {
         connection->AsyncSend(data, strlen(data));
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1  ));
     }
 }   

@@ -91,8 +91,8 @@ int main(int args, char* argv[])
     }
     int     thread_num  = std::stoi(argv[1]);
     char*   ip          = argv[2];
-    int     port        = std::stoi(argv[3]);
-    
+    short   port        = (short)std::stoi(argv[3]);
+
     EchoClient server{thread_num, ip, port};
 
 
