@@ -63,13 +63,12 @@ public:
     /* 关闭此连接 */
     virtual void            Close() override;
 
-private:
+protected:
     Connection(
         std::shared_ptr<libevent::IOThread> thread,
         evutil_socket_t         socket,
         bbt::net::IPAddress&    ipaddr
     );
-protected:
     /* 启动Connection */
     void                    RunInEventLoop();
     void                    OnEvent(evutil_socket_t sockfd, short events);
