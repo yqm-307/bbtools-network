@@ -10,7 +10,8 @@ void evThread::Start()
 
 void evThread::Stop()
 {
-    m_event_loop->BreakLoop();
+    auto err = m_event_loop->BreakLoop();
+    AssertWithInfo(err, "impossible");
     if (m_thread->joinable())
     {
         m_thread->join();
@@ -30,7 +31,7 @@ std::shared_ptr<Event> evThread::RegistEventSafe(int fd, short events, const OnE
 
 void evThread::Work()
 {
-    
-    m_event_loop->StartLoop(EventLoopOpt::LOOP_NO_EXIT_ON_EMPTY);
+    auto err = m_event_loop->StartLoop(EventLoopOpt::LOOP_NO_EXIT_ON_EMPTY);
+    AssertWithInfo(err, "impossible");
 }
 }

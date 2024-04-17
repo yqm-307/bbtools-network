@@ -58,7 +58,7 @@ public:
     operator bool() const
     { return (Type() == ErrType::ERRTYPE_NOTHING); }    
 
-    ErrType     Type() const
+    const ErrType&     Type() const
     { return GetErrType(); }
     
     const std::string& What() const
