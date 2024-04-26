@@ -14,6 +14,8 @@
 
 #include <bbt/network/Errcode.hpp>
 
+namespace bbt::database::redis { class AsyncConnection; }
+
 namespace bbt::network::libevent
 {
 
@@ -21,6 +23,7 @@ class EventBase
 {
     friend class Event;
     friend class EventLoop;
+    friend class bbt::database::redis::AsyncConnection;
 public:
     EventBase();
     ~EventBase();

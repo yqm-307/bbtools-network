@@ -14,6 +14,12 @@
 namespace bbt::network::libevent
 {
 
+EventLoop::EventLoop(EventBase* base):
+    m_io_context(base)
+{
+
+}
+
 
 EventLoop::EventLoop()
     :m_io_context(new EventBase)

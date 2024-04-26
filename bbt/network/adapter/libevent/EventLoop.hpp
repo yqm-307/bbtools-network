@@ -31,6 +31,8 @@ enum EventLoopOpt
 class EventLoop
 {
 public:
+    /* base 会在析构时释放内存 */
+    explicit EventLoop(EventBase* base);
     EventLoop();
     ~EventLoop();
 
