@@ -42,7 +42,7 @@ public:
     int GetEventNum();
 
     std::shared_ptr<Event> CreateEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
-
+    EventBase* GetEventBase() { return m_io_context; }
 
 private:
     EventBase*  m_io_context{nullptr};

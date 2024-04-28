@@ -34,4 +34,10 @@ void evThread::Work()
     auto err = m_event_loop->StartLoop(EventLoopOpt::LOOP_NO_EXIT_ON_EMPTY);
     AssertWithInfo(err, "impossible");
 }
+
+std::shared_ptr<EventLoop> evThread::GetEventLoop()
+{
+    return m_event_loop;
+}
+
 }

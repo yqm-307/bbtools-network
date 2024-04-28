@@ -18,6 +18,7 @@ public:
 
     std::shared_ptr<Event> RegistEvent(int fd, short events, const OnEventCallback& onevent_cb);
     std::shared_ptr<Event> RegistEventSafe(int fd, short events, const OnEventCallback& onevent_cb);
+    std::shared_ptr<EventLoop> GetEventLoop();
 protected:
     void Work();
 private:
