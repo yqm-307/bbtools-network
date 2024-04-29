@@ -15,19 +15,12 @@ add_executable(Test_EventLoop_exec eventloop_test.cc)
 target_link_libraries(Test_EventLoop_exec ${MY_LIBS})
 add_test(NAME Test_EventLoop_exec COMMAND Test_EventLoop_exec)
 
-add_executable(Test_IOThread_exec evthread_test.cc)
-target_link_libraries(Test_IOThread_exec ${MY_LIBS})
-add_test(NAME Test_IOThread_exec COMMAND Test_IOThread_exec)
-
-
 add_executable(Test_Client client.cc)
 target_link_libraries(Test_Client ${MY_LIBS})
 
 add_executable(Test_Server server.cc)
 target_link_libraries(Test_Server ${MY_LIBS})
 
-add_executable(test1 test.cc)
-target_link_libraries(test1 ${MY_LIBS})
 
 add_executable(echo_server echo_server.cc)
 target_link_libraries(echo_server ${MY_LIBS})
