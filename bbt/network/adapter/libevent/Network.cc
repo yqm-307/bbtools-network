@@ -26,10 +26,18 @@ Network::Network(uint32_t sub_thread_num)
     m_count_down_latch(new bbt::thread::lock::CountDownLatch(sub_thread_num + 1))
 {
     /* 初始化主线程 */
-    m_main_thread = std::make_shared<libevent::IOThread>([this](IOThreadID){ WaitForCountDown(m_count_down_latch); }, nullptr);
+    m_main_thread = std::make_shared<libevent::IOThread>(
+        std::make_shared<EventLoop>(),
+        [this](IOThreadID){ WaitForCountDown(m_count_down_latch); },
+        nullptr);
+
     /* 初始化子线程 */
     for (int i = 0; i < m_sub_loop_nums; ++i) {
-        auto io_thread = std::make_shared<libevent::IOThread>([this](IOThreadID){ WaitForCountDown(m_count_down_latch); }, nullptr);
+        auto io_thread = std::make_shared<libevent::IOThread>(
+            std::make_shared<EventLoop>(),
+            [this](IOThreadID){ WaitForCountDown(m_count_down_latch); },
+            nullptr);
+
         m_sub_threads.push_back(io_thread);
     }
 }

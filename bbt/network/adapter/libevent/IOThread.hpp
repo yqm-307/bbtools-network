@@ -30,34 +30,23 @@ public:
     typedef std::function<void(const Errcode&)>                             OnTimeOutCallback;
     typedef std::function<void(evutil_socket_t, short, void*)>              EventCallback;
 
-    IOThread();
-    explicit IOThread(const HookCallback& thread_begin, const HookCallback& thread_end);
+    IOThread(std::shared_ptr<EventLoop> eventloop);
+    explicit IOThread(std::shared_ptr<EventLoop> eventloop, const HookCallback& thread_begin, const HookCallback& thread_end);
     virtual ~IOThread();
 
-    /* 阻塞的停止thread */
-    virtual Errcode Stop() override;
-
-    /**
-     * @brief 在当前线程中注册一个事件
-     * 
-     * @param event_ptr 
-     * @return EventId 如果成功返回事件id，失败返回-1
-     */
-    // EventId RegisterEvent(std::shared_ptr<evEvent> event_ptr);
+    virtual Errcode         Stop() override;
     std::shared_ptr<Event>  RegisterEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
-
-    const std::unique_ptr<EventLoop>& GetEventLoop() const;
+    std::shared_ptr<EventLoop> 
+                            GetEventLoop() const;
 
 private:
     virtual void            WorkHandle() override;
-    /* 初始化线程内部资源 */
     void                    Init();
-    /* 回收线程内部资源 */
     void                    Destory();
     void                    evWorkFunc();
 
 protected:
-    std::unique_ptr<EventLoop>  m_eventloop{nullptr};
+    std::shared_ptr<EventLoop>  m_eventloop{nullptr};
     std::mutex                  m_mutex;
 };
 

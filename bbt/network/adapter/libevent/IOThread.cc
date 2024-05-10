@@ -15,14 +15,14 @@
 namespace bbt::network::libevent
 {
 
-IOThread::IOThread()
-    :m_eventloop(std::make_unique<EventLoop>())
+IOThread::IOThread(std::shared_ptr<EventLoop> eventloop)
+    :m_eventloop(eventloop)
 {
     Init();
 }
 
-IOThread::IOThread(const HookCallback& thread_begin, const HookCallback& thread_end)
-    :m_eventloop(std::make_unique<EventLoop>())
+IOThread::IOThread(std::shared_ptr<EventLoop> eventloop, const HookCallback& thread_begin, const HookCallback& thread_end)
+    :m_eventloop(eventloop)
 {
     SetOnThreadBegin_Hook(thread_begin);
     SetOnThreadEnd_Hook(thread_end);
@@ -60,7 +60,7 @@ void IOThread::WorkHandle()
     Assert(err);
 }
 
-const std::unique_ptr<EventLoop>& IOThread::GetEventLoop() const
+std::shared_ptr<EventLoop> IOThread::GetEventLoop() const
 {
     return m_eventloop;
 }

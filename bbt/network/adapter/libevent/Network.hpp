@@ -48,6 +48,8 @@ public:
     void                            Stop();
     /* 获取 network 状态 */
     NetworkStatus                   Status();
+
+
 protected:
     std::pair<Errcode, libevent::ConnectionSPtr>         
                                     DoAccept(int listenfd);
@@ -55,11 +57,11 @@ protected:
     void                            OnError(const Errcode& err);
     Errcode                         DoConnect(evutil_socket_t fd, const bbt::net::IPAddress& addr);
     void                            OnConnect(
-                                    std::shared_ptr<Event>  event,
-                                    short                   events,
-                                    bbt::timer::clock::Timestamp<bbt::timer::clock::ms> timeout,
-                                    const bbt::net::IPAddress&  addr,
-                                    interface::OnConnectCallback cb);
+                                        std::shared_ptr<Event>  event,
+                                        short                   events,
+                                        bbt::timer::clock::Timestamp<bbt::timer::clock::ms> timeout,
+                                        const bbt::net::IPAddress&  addr,
+                                        interface::OnConnectCallback cb);
 
     ThreadSPtr                      GetAThread();
 
