@@ -45,11 +45,17 @@ class Connection:
     public base::ConnectionBase,
     public std::enable_shared_from_this<Connection>
 {
-    friend class bbt::templateutil::ManagerBase<ConnId, ConnectionBase>;
-    friend class Network;
+    // friend class Network;
+    friend class libevent::IOThread;
 public:
     virtual ~Connection();
 
+
+    static std::shared_ptr<Connection> Create(
+        std::shared_ptr<libevent::IOThread> thread,
+        evutil_socket_t         socket,
+        const bbt::net::IPAddress&    ipaddr
+    );
     /* 设置Connection的回调行为 */
     void                    SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks);
     /* 设置空闲超时关闭Connection的时间 */
@@ -67,7 +73,7 @@ protected:
     Connection(
         std::shared_ptr<libevent::IOThread> thread,
         evutil_socket_t         socket,
-        bbt::net::IPAddress&    ipaddr
+        const bbt::net::IPAddress&    ipaddr
     );
     /* 启动Connection */
     void                    RunInEventLoop();

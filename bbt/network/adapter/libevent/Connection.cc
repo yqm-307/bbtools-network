@@ -17,7 +17,12 @@
 namespace bbt::network::libevent
 {
 
-Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, bbt::net::IPAddress& ipaddr)
+std::shared_ptr<Connection> Connection::Create(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const bbt::net::IPAddress& ipaddr)
+{
+    return std::make_shared<Connection>(thread, socket, ipaddr);
+}
+
+Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const bbt::net::IPAddress& ipaddr)
     :ConnectionBase(socket, ipaddr),
     m_current_thread(thread)
 {
