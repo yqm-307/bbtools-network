@@ -12,7 +12,8 @@ int main()
 {
     Assert(bbt::network::GlobalInit());
 
-    Network network{1};
+    Network network;
+    network.AutoInitThread(1);
     std::vector<ConnectionSPtr> conn_vec;
 
     network.AsyncConnect("127.0.0.1", 10010, 1000,

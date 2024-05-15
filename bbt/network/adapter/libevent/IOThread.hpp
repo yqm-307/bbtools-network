@@ -58,7 +58,8 @@ private:
 
     void                    OnAccept(int fd, short events, const OnAcceptCallback& onaccept);
     void                    OnConnect(
-                                std::shared_ptr<Event> event,
+                                int sockfd,
+                                EventId event,
                                 short events,
                                 bbt::timer::clock::Timestamp<bbt::timer::clock::ms> timeout,
                                 const bbt::net::IPAddress& addr,
@@ -71,7 +72,7 @@ protected:
     struct ConnectEventMapImpl
     {
         Errcode                         AddConnectEvent(std::shared_ptr<Event> event);
-        Errcode                         DelConnectEvent(std::shared_ptr<Event> event);
+        Errcode                         DelConnectEvent(EventId event);
         std::mutex                      m_connect_mutex;
         std::map<EventId, std::shared_ptr<Event>>
                                         m_connect_events;           // 连接事件
@@ -81,7 +82,7 @@ protected:
     std::unordered_map<bbt::net::IPAddress, std::shared_ptr<Event>>
                                 m_addr2event_map;
     std::shared_ptr<EventLoop>  m_eventloop{nullptr};
-    std::mutex                  m_mutex;
+    std::mutex                  m_addr2event_mutex;
     OnErrorCallback             m_on_error{nullptr};
 
 };

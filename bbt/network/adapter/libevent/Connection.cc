@@ -13,6 +13,7 @@
 #include <bbt/base/Logger/Logger.hpp>
 #include <bbt/base/timer/Clock.hpp>
 #include <bbt/network/adapter/libevent/Connection.hpp>
+#include <bbt/network/adapter/libevent/IOThread.hpp>
 
 namespace bbt::network::libevent
 {

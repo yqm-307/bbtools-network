@@ -14,12 +14,12 @@
 #include <bbt/network/Define.hpp>
 #include <bbt/network/adapter/base/Connection.hpp>
 #include <bbt/network/adapter/libevent/EventLoop.hpp>
-#include <bbt/network/adapter/libevent/IOThread.hpp>
 
 namespace bbt::network::libevent
 {
 
 class Connection;
+class IOThread;
 typedef std::shared_ptr<Connection> ConnectionSPtr;
 
 
@@ -29,7 +29,7 @@ typedef std::function<void(ConnectionSPtr /*conn*/, const Errcode& /*err */, siz
                                                                             OnSendCallback;
 typedef std::function<void(void* /*userdata*/, const bbt::net::IPAddress& )>OnCloseCallback;
 typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
-typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnErrorCallback;
+typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnConnErrorCallback;
 
 struct ConnCallbacks
 {
@@ -37,7 +37,7 @@ struct ConnCallbacks
     OnSendCallback      on_send_callback{nullptr};
     OnCloseCallback     on_close_callback{nullptr};
     OnTimeoutCallback   on_timeout_callback{nullptr};
-    OnErrorCallback     on_err_callback{nullptr};
+    OnConnErrorCallback     on_err_callback{nullptr};
 };
 
 
@@ -48,6 +48,11 @@ class Connection:
     // friend class Network;
     friend class libevent::IOThread;
 public:
+    Connection(
+        std::shared_ptr<libevent::IOThread> thread,
+        evutil_socket_t         socket,
+        const bbt::net::IPAddress&    ipaddr
+    );
     virtual ~Connection();
 
 
@@ -70,11 +75,6 @@ public:
     virtual void            Close() override;
 
 protected:
-    Connection(
-        std::shared_ptr<libevent::IOThread> thread,
-        evutil_socket_t         socket,
-        const bbt::net::IPAddress&    ipaddr
-    );
     /* 启动Connection */
     void                    RunInEventLoop();
     void                    OnEvent(evutil_socket_t sockfd, short events);

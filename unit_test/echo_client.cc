@@ -48,13 +48,15 @@ int main(int args, char* argv[])
     int     port        = std::stoi(argv[2]);
 
 
-    Network network{1};
+    Network network;
+    network.AutoInitThread(1);
+    network.Start();
     ConnectionSPtr connection = nullptr;
     bbt::thread::lock::CountDownLatch count_down_latch{1};
     const char* data = "hello world";
     InitCallbacks();
 
-    network.AsyncConnect(ip, port, 1000,
+    auto err = network.AsyncConnect(ip, port, 1000,
     [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
         if (!err) {
             BBT_BASE_LOG_ERROR("%s", err.CWhat());
@@ -68,6 +70,9 @@ int main(int args, char* argv[])
         connection = sptr;
         count_down_latch.down();
     });
+
+    if (!err)
+        BBT_BASE_LOG_ERROR(err.CWhat());
     
     network.Start();
     count_down_latch.wait();

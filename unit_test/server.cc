@@ -11,7 +11,8 @@ int main()
     int console_debug_flag = 1;
     BBT_CONFIG_QUICK_SET_DYNAMIC_ENTRY(int, &console_debug_flag, bbt::config::BBT_LOG_STDOUT_OPEN);
     Assert(bbt::network::GlobalInit());
-    Network network{1};
+    Network network;
+    network.AutoInitThread(1);
     std::vector<ConnectionSPtr> conn_vec;
 
     auto err = network.StartListen("127.0.0.1", 10010, [&network, &conn_vec](const Errcode& err, ConnectionSPtr sptr){
