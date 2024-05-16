@@ -23,6 +23,7 @@ namespace bbt::network::libevent
 {
 typedef std::function<void(const Errcode&, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
 typedef std::function<void(const Errcode&)>                                             OnErrorCallback;
+typedef std::function<std::shared_ptr<libevent::IOThread>()>                            OnRegistThreadCallback;
 
 class IOThread:
     public base::IOThread
@@ -37,7 +38,8 @@ public:
     virtual ~IOThread();
 
     /////////////////////// 网络操作
-    Errcode                 Listen(const char* ip, short port, const OnAcceptCallback& onaccept_cb);
+    /* 新连接默认在本线程运行 */
+    Errcode                 Listen(const char* ip, short port, const OnAcceptCallback& onaccept_cb, std::shared_ptr<libevent::IOThread> thread = nullptr);
     Errcode                 UnListen(const char* ip, short port);
     Errcode                 AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect);
     ///////////////////////
@@ -56,7 +58,7 @@ private:
     void                    Destory();
     void                    evWorkFunc();
 
-    void                    OnAccept(int fd, short events, const OnAcceptCallback& onaccept);
+    void                    OnAccept(int fd, short events, const OnAcceptCallback& onaccept, std::shared_ptr<libevent::IOThread> thread);
     void                    OnConnect(
                                 int sockfd,
                                 EventId event,
@@ -66,7 +68,7 @@ private:
                                 interface::OnConnectCallback onconnect);
     Errcode                 Connect(evutil_socket_t fd, const bbt::net::IPAddress& addr);
 
-    std::pair<Errcode, libevent::ConnectionSPtr> Accept(int listenfd);
+    std::pair<Errcode, libevent::ConnectionSPtr> Accept(int listenfd, std::shared_ptr<libevent::IOThread> thread);
     void                    OnError(const Errcode& error);
 protected:
     struct ConnectEventMapImpl

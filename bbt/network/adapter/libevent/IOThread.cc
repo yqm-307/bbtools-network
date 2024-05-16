@@ -123,7 +123,7 @@ Errcode IOThread::ConnectEventMapImpl::DelConnectEvent(EventId eventid)
     return FASTERR_NOTHING;
 }
 
-Errcode IOThread::Listen(const char* ip, short port, const OnAcceptCallback& onaccept_cb)
+Errcode IOThread::Listen(const char* ip, short port, const OnAcceptCallback& onaccept_cb, std::shared_ptr<libevent::IOThread> thread)
 {
     auto listen_addr = bbt::net::IPAddress(ip, port);
 
@@ -144,11 +144,11 @@ Errcode IOThread::Listen(const char* ip, short port, const OnAcceptCallback& ona
 
     // 初始化事件
     auto event = RegisterEvent(fd, EventOpt::READABLE | EventOpt::PERSIST,
-    [weak_this, onaccept_cb](std::shared_ptr<Event> event, short events){
+    [weak_this, onaccept_cb, thread](std::shared_ptr<Event> event, short events){
         if (weak_this.expired())
             return;
         auto pthis = std::dynamic_pointer_cast<libevent::IOThread>(weak_this.lock());
-        pthis->OnAccept(event->GetSocket(), events, onaccept_cb);
+        pthis->OnAccept(event->GetSocket(), events, onaccept_cb, thread);
     });
 
     // 注册事件
@@ -161,11 +161,11 @@ Errcode IOThread::Listen(const char* ip, short port, const OnAcceptCallback& ona
     return FASTERR_NOTHING;
 }
 
-void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept)
+void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept, std::shared_ptr<libevent::IOThread> thread)
 {
     if ( (events & EventOpt::READABLE) > 0 ) {
         while (true) {
-            auto [err, new_conn_sptr] = Accept(fd);
+            auto [err, new_conn_sptr] = Accept(fd, thread);
             if (new_conn_sptr == nullptr)
                 break;
             /* 排除掉 errno = try again 的 */
@@ -178,7 +178,7 @@ void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept)
     printf("OnAccept once!\n");
 }
 
-std::pair<Errcode, libevent::ConnectionSPtr> IOThread::Accept(int listenfd)
+std::pair<Errcode, libevent::ConnectionSPtr> IOThread::Accept(int listenfd, std::shared_ptr<libevent::IOThread> thread)
 {
     evutil_socket_t     fd;
     sockaddr_in         addr;
@@ -190,8 +190,13 @@ std::pair<Errcode, libevent::ConnectionSPtr> IOThread::Accept(int listenfd)
     endpoint.set(addr);
 
     if(fd >= 0) {
-        auto new_conn_sptr = Connection::Create(
-            std::dynamic_pointer_cast<libevent::IOThread>(shared_from_this()), fd, endpoint);
+        ConnectionSPtr new_conn_sptr;
+        if (thread == nullptr)
+            new_conn_sptr = Connection::Create(
+                std::dynamic_pointer_cast<libevent::IOThread>(shared_from_this()), fd, endpoint);
+        else
+            new_conn_sptr = Connection::Create(
+                thread, fd, endpoint);
 
         return {FASTERR_NOTHING, new_conn_sptr} ;
     }

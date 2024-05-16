@@ -152,7 +152,7 @@ Errcode Network::StartListen(const char* ip, short port, const OnAcceptCallback&
     if (listen_and_connect_thread == nullptr)
         return Errcode{"listen thread is null!"};
 
-    return listen_and_connect_thread->Listen(ip, port, onaccept_cb);
+    return listen_and_connect_thread->Listen(ip, port, onaccept_cb, GetAIOThread());
 }
 
 NetworkStatus Network::Status()
