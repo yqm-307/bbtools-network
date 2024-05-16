@@ -145,7 +145,7 @@ Errcode IOThread::Listen(const char* ip, short port, const OnAcceptCallback& ona
     // 初始化事件
     auto event = RegisterEvent(fd, EventOpt::READABLE | EventOpt::PERSIST,
     [weak_this, onaccept_cb](std::shared_ptr<Event> event, short events){
-        if (!weak_this.expired())
+        if (weak_this.expired())
             return;
         auto pthis = std::dynamic_pointer_cast<libevent::IOThread>(weak_this.lock());
         pthis->OnAccept(event->GetSocket(), events, onaccept_cb);
@@ -163,7 +163,7 @@ Errcode IOThread::Listen(const char* ip, short port, const OnAcceptCallback& ona
 
 void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept)
 {
-        if ( (events & EventOpt::READABLE) > 0 ) {
+    if ( (events & EventOpt::READABLE) > 0 ) {
         while (true) {
             auto [err, new_conn_sptr] = Accept(fd);
             if (new_conn_sptr == nullptr)
@@ -175,6 +175,7 @@ void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept)
             }
         }
     }
+    printf("OnAccept once!\n");
 }
 
 std::pair<Errcode, libevent::ConnectionSPtr> IOThread::Accept(int listenfd)

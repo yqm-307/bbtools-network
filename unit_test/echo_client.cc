@@ -83,6 +83,6 @@ int main(int args, char* argv[])
     auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(3));
     while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {
         connection->AsyncSend(data, strlen(data));
-        std::this_thread::sleep_for(std::chrono::milliseconds(1  ));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }   

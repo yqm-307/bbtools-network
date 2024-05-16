@@ -56,6 +56,7 @@ public:
     void Start()
     {
         m_network.Start();
+        BBT_BASE_LOG_INFO("server start!");
         while(true)
             sleep(1);
     }
