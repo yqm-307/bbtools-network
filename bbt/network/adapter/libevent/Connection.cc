@@ -171,11 +171,14 @@ Errcode Connection::Recv(evutil_socket_t sockfd)
         } else if (errno == ECONNREFUSED) {
             errcode.SetInfo("connect refused!");
             errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_CONNREFUSED);
+        } else {
+            errcode.SetInfo("other errno! errno=" + std::to_string(errno));
+            errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_OTHER_ERR);
         }
     } else if (read_len == 0) {
         errcode.SetInfo("peer connect closed!");
         errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_EOF);
-    } else if (read_len <= -1) {
+    } else if (read_len < -1) {
         errcode.SetInfo("other error! please debug!");
         errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_OTHER_ERR);
     }
@@ -265,6 +268,7 @@ int Connection::RegistASendEvent()
     /* Swap 是无额外开销的 */
     {
         bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
+        BBT_BASE_LOG_TRACE("%ld, %ld", m_output_buffer.DataSize(), buffer_sptr->DataSize());
         buffer_sptr->Swap(m_output_buffer);
     }
 
@@ -303,6 +307,7 @@ void Connection::OnSendEvent(std::shared_ptr<bbt::buffer::Buffer> output_buffer,
         m_output_buffer_is_free.exchange(true); // 允许注册发送事件
     } else {
         bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
+        Assert(output_buffer->DataSize() >= 0);
         output_buffer->Swap(m_output_buffer);
     }
 }
