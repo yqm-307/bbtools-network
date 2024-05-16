@@ -175,7 +175,6 @@ void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept, 
             }
         }
     }
-    printf("OnAccept once!\n");
 }
 
 std::pair<Errcode, libevent::ConnectionSPtr> IOThread::Accept(int listenfd, std::shared_ptr<libevent::IOThread> thread)
