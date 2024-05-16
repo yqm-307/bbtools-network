@@ -175,7 +175,7 @@ Errcode Connection::Recv(evutil_socket_t sockfd)
     } else if (read_len == 0) {
         errcode.SetInfo("peer connect closed!");
         errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_EOF);
-    } else if (read_len < -1) {
+    } else if (read_len <= -1) {
         errcode.SetInfo("other error! please debug!");
         errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_OTHER_ERR);
     }
