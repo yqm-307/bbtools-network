@@ -12,14 +12,14 @@
 #include <bbt/base/buffer/Buffer.hpp>
 #include <bbt/base/thread/Lock.hpp>
 #include <bbt/network/Define.hpp>
-#include <bbt/network/adapter/base/Connection.hpp>
+// #include <bbt/network/adapter/base/Connection.hpp>
+#include <bbt/network/adapter/libevent/LibeventConnection.hpp>
 #include <bbt/network/adapter/libevent/EventLoop.hpp>
 
 namespace bbt::network::libevent
 {
 
 class Connection;
-class IOThread;
 typedef std::shared_ptr<Connection> ConnectionSPtr;
 
 
@@ -42,10 +42,9 @@ struct ConnCallbacks
 
 
 class Connection:
-    public base::ConnectionBase,
+    public libevent::LibeventConnection,
     public std::enable_shared_from_this<Connection>
 {
-    // friend class Network;
     friend class libevent::IOThread;
 public:
     Connection(
@@ -93,8 +92,6 @@ protected:
     int                     RegistASendEvent();
     int                     AppendOutputBuffer(const char* data, size_t len);
 private:
-    std::shared_ptr<libevent::IOThread>
-                            m_current_thread{nullptr};
     ConnCallbacks           m_callbacks;                // 回调函数
     /**
      * 一连接一事件，

@@ -24,8 +24,7 @@ std::shared_ptr<Connection> Connection::Create(std::shared_ptr<libevent::IOThrea
 }
 
 Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const bbt::net::IPAddress& ipaddr)
-    :ConnectionBase(socket, ipaddr),
-    m_current_thread(thread)
+    :LibeventConnection(thread, socket, ipaddr)
 {
 }
 
@@ -119,10 +118,17 @@ void Connection::Close()
 void Connection::RunInEventLoop()
 {
     auto weak_this = weak_from_this();
-    m_event = m_current_thread->RegisterEvent(GetSocket(),
-    EventOpt::CLOSE |       // 关闭事件
-    EventOpt::PERSIST |     // 持久化
-    EventOpt::READABLE,     // 可读事件
+    if (!BindThreadIsRunning())
+        return;
+
+    auto thread = GetBindThread();
+    if (thread == nullptr)
+        return;
+
+    m_event = thread->RegisterEvent(GetSocket(),
+        EventOpt::CLOSE |       // 关闭事件
+        EventOpt::PERSIST |     // 持久化
+        EventOpt::READABLE,     // 可读事件
     [weak_this](std::shared_ptr<Event> event, short events){
         auto pthis = weak_this.lock();
         if (!pthis) return;
@@ -273,7 +279,14 @@ int Connection::RegistASendEvent()
     }
 
     auto weak_this = weak_from_this();
-    m_send_event = m_current_thread->RegisterEvent(GetSocket(), EventOpt::WRITEABLE | EventOpt::PERSIST,
+    if (!BindThreadIsRunning())
+        return -1;
+    
+    auto thread = GetBindThread();
+    if (thread == nullptr)
+        return -1;
+
+    m_send_event = thread->RegisterEvent(GetSocket(), EventOpt::WRITEABLE | EventOpt::PERSIST,
     [weak_this, buffer_sptr](std::shared_ptr<Event> event, short events){
         auto pthis = weak_this.lock();
         if (!pthis) return;
