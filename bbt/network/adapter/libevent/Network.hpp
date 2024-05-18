@@ -79,9 +79,9 @@ public:
      */
     Errcode                         AutoInitThread(int sub_thread_num);
 
+    ThreadSPtr                      GetAIOThread();
 protected:
     std::pair<ThreadSPtr, Errcode>  GetThread(IOThreadType type);
-    ThreadSPtr                      GetAIOThread();
     ThreadSPtr                      GetListenAndConnectThread();
 
     void                            StopMainThread();

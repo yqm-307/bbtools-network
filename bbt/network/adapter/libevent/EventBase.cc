@@ -29,4 +29,10 @@ int EventBase::GetEventNum()
     return event_base_get_num_events(m_io_context, EVENT_BASE_COUNT_ADDED);
 }
 
+event_base* EventBase::GetRawBase()
+{
+    return m_io_context;
+}
+
+
 }

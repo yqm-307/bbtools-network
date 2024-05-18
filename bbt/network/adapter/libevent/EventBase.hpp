@@ -23,12 +23,12 @@ class EventBase
 {
     friend class Event;
     friend class EventLoop;
-    friend class bbt::database::redis::AsyncConnection;
 public:
     EventBase();
     ~EventBase();
 
     int GetEventNum();
+    event_base* GetRawBase();
 private:
     event_base* m_io_context{nullptr};
 };
