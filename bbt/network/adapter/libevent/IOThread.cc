@@ -169,7 +169,7 @@ void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept, 
             if (new_conn_sptr == nullptr)
                 break;
             /* 排除掉 errno = try again 的 */
-            if ( (err.IsErr()) || (err.IsErr() && new_conn_sptr != nullptr) ) {
+            if ( (err.IsErr()) || (!err.IsErr() && new_conn_sptr != nullptr) ) {
                 onaccept(err, new_conn_sptr);
                 new_conn_sptr->RunInEventLoop();
             }
