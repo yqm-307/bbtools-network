@@ -30,7 +30,7 @@ int main()
         BBT_BASE_LOG_INFO("new connection!");
     });
 
-    if (!err) {
+    if (err.IsErr()) {
         BBT_BASE_LOG_INFO("%s", err.CWhat());
         printf("%s\n", err.CWhat());
     }

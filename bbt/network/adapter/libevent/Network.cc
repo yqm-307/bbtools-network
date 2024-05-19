@@ -129,7 +129,7 @@ void Network::StopMainThread()
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
     if (listen_and_connect_thread->IsRunning()) {
-        Assert(listen_and_connect_thread->Stop());
+        Assert(!listen_and_connect_thread->Stop().IsErr());
     }
 
     m_thread_map.erase(IOThreadType::LISTENANDCONNECT);
@@ -140,7 +140,7 @@ void Network::StopSubThread()
     for (auto&& itor : m_thread_map) {
         auto thread = itor.second;
         if (!thread->IsRunning())
-            Assert(thread->Stop());
+            Assert(!thread->Stop().IsErr());
     }
 
     m_status = NetworkStatus::STOP;

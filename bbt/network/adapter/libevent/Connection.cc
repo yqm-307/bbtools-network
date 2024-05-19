@@ -108,7 +108,7 @@ void Connection::Close()
     auto err = m_event->CancelListen();
     if (m_send_event)
         m_send_event->CancelListen();
-    if (!err) OnError(err);
+    if (err.IsErr()) OnError(err);
     
     CloseSocket();
     SetStatus(ConnStatus::DECONNECTED);
@@ -143,7 +143,7 @@ void Connection::OnEvent(evutil_socket_t sockfd, short event)
     if (event & EventOpt::READABLE) {
         /* 尝试读取套接字数据，如果对端关闭，一并关闭此连接 */
         auto err = Recv(sockfd);
-        if (!err) OnError(err);
+        if (err.IsErr()) OnError(err);
         if (err.Type() == ErrType::ERRTYPE_NETWORK_RECV_EOF)
             Close();
     } else if (event & EventOpt::TIMEOUT) {
@@ -172,24 +172,20 @@ Errcode Connection::Recv(evutil_socket_t sockfd)
 
     if (read_len == -1) {
         if (errno == EINTR || errno == EAGAIN) {
-            errcode.SetInfo("please try again!");
-            errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_TRY_AGAIN);
+            errcode = Errcode{"please try again!", ERRTYPE_NETWORK_RECV_TRY_AGAIN};
         } else if (errno == ECONNREFUSED) {
-            errcode.SetInfo("connect refused!");
-            errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_CONNREFUSED);
+            errcode = Errcode{"connect refused!", ERRTYPE_NETWORK_RECV_CONNREFUSED};
         } else {
-            errcode.SetInfo("other errno! errno=" + std::to_string(errno));
-            errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_OTHER_ERR);
+            errcode = Errcode{"other errno! errno=" + std::to_string(errno), ERRTYPE_NETWORK_RECV_OTHER_ERR};
         }
+
     } else if (read_len == 0) {
-        errcode.SetInfo("peer connect closed!");
-        errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_EOF);
+        errcode = Errcode{"peer connect closed!", ERRTYPE_NETWORK_RECV_EOF};
     } else if (read_len < -1) {
-        errcode.SetInfo("other error! please debug!");
-        errcode.SetType(ErrType::ERRTYPE_NETWORK_RECV_OTHER_ERR);
+        errcode = Errcode{"other error! please debug!", ERRTYPE_NETWORK_RECV_OTHER_ERR};
     }
 
-    if (!errcode)
+    if (errcode.IsErr())
         return errcode;
 
     OnRecv(buffer_begin, read_len);
@@ -304,8 +300,7 @@ void Connection::OnSendEvent(std::shared_ptr<bbt::buffer::Buffer> output_buffer,
 
     if (IsClosed()) return;
     if (events & EventOpt::TIMEOUT) {
-        err.SetType(ErrType::ERRTYPE_SEND_TIMEOUT);
-        err.SetInfo("send timeout!");
+        err = Errcode{"send timeout!", ERRTYPE_SEND_TIMEOUT};
     } else if (events & EventOpt::WRITEABLE) {
         size = Send(output_buffer->Peek(), output_buffer->DataSize());
     }

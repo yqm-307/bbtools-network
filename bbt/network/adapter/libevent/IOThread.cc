@@ -51,7 +51,7 @@ void IOThread::evWorkFunc()
 void IOThread::WorkHandle()
 {
     auto err = m_eventloop->StartLoop(EVLOOP_NO_EXIT_ON_EMPTY);
-    Assert(err);
+    Assert(!err.IsErr());
 }
 
 std::shared_ptr<EventLoop> IOThread::GetEventLoop() const
@@ -88,7 +88,7 @@ Errcode IOThread::Stop()
     m_addr2event_map.clear();
 
     auto err = m_eventloop->BreakLoop();
-    if (!err)
+    if (err.IsErr())
         return err;
     
     /* 阻塞式的等待 */
@@ -169,7 +169,7 @@ void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept, 
             if (new_conn_sptr == nullptr)
                 break;
             /* 排除掉 errno = try again 的 */
-            if ( (!err) || (err && new_conn_sptr != nullptr) ) {
+            if ( (err.IsErr()) || (err.IsErr() && new_conn_sptr != nullptr) ) {
                 onaccept(err, new_conn_sptr);
                 new_conn_sptr->RunInEventLoop();
             }
@@ -217,7 +217,7 @@ Errcode IOThread::UnListen(const char* ip, short port)
 
     m_addr2event_map.erase(it);
     auto err = it->second->CancelListen();
-    if (!err)
+    if (err.IsErr())
         return err;
 
     return FASTERR_NOTHING;
@@ -263,11 +263,11 @@ void IOThread::OnConnect(
         
     if (events & EventOpt::WRITEABLE) {
         auto err = Connect(sockfd, addr);
-        if (!err && err.Type() == ErrType::ERRTYPE_CONNECT_TRY_AGAIN) {
+        if (err.IsErr() && err.Type() == ErrType::ERRTYPE_CONNECT_TRY_AGAIN) {
             return;
         }
 
-        if (err) {
+        if (!err.IsErr()) {
             auto conn_sptr = libevent::Connection::Create(
                 std::dynamic_pointer_cast<libevent::IOThread>(shared_from_this()), sockfd, addr);
             onconnect(FASTERR_NOTHING, conn_sptr);

@@ -12,7 +12,7 @@ public:
     {
         m_network.AutoInitThread(thread_num);
         m_network.StartListen(ip, port, [this](auto err, auto sptr){
-            if (err)
+            if (!err.IsErr())
                 OnNewConnection(sptr);
             else
                 BBT_BASE_LOG_ERROR("[%s]", err.CWhat());

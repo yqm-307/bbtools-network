@@ -36,7 +36,7 @@ Event::Event(EventBase* base, evutil_socket_t fd, short listen_events, const OnE
 Event::~Event()
 {
     auto err = CancelListen();
-    DebugAssertWithInfo(err, "it`s a wrong!");
+    DebugAssertWithInfo(!err.IsErr(), "it`s a wrong!");
     event_free(m_raw_event);
 
     m_raw_event = nullptr;

@@ -15,7 +15,7 @@
 namespace bbt::network
 {
 
-enum ErrType
+enum ErrType : bbt::errcode::ErrType
 {
     ERRTYPE_NOTHING = 0,    // 没有问题
     ERRTYPE_ERROR = 1,      // 错误
@@ -37,41 +37,40 @@ enum ErrType
 };
 
 class Errcode:
-    public bbt::errcode::Errcode<ErrType>
+    public bbt::errcode::Errcode
 {
 public:
     Errcode(const std::string& info, ErrType type = ErrType::ERRTYPE_ERROR)
-        :bbt::errcode::Errcode<ErrType>(info, type)
+        :bbt::errcode::Errcode(info, type)
     {
     }
 
     Errcode(const Errcode& err)
-        :bbt::errcode::Errcode<ErrType>(err)
+        :bbt::errcode::Errcode(err)
     {
     }
     
     Errcode(Errcode&& err)
-        :bbt::errcode::Errcode<ErrType>(err)
+        :bbt::errcode::Errcode(err)
     {
     }
 
-    operator bool() const
-    { return (Type() == ErrType::ERRTYPE_NOTHING); }    
+    Errcode& operator=(const Errcode& other)
+    {
+        m_err_msg = other.m_err_msg;
+        m_err_type = other.m_err_type;
+        return *this;
+    }
 
-    const ErrType&     Type() const
-    { return GetErrType(); }
-    
-    const std::string& What() const
-    { return GetMsg(); }
+    Errcode& operator=(Errcode&& other)
+    {
+        m_err_msg = std::move(other.m_err_msg);
+        m_err_type = other.m_err_type;
+        return *this;
+    }
 
-    const char* CWhat() const
-    { return GetCMsg(); }
-
-    void        SetInfo(const std::string& info)
-    { SetMsg(info); }
-
-    void        SetType(ErrType type)
-    { SetErrType(type); }
+    virtual bool IsErr() const override
+    { return (Type() != bbt::network::ERRTYPE_NOTHING); }
 };
 
 }

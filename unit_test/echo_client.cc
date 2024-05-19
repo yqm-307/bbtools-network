@@ -58,7 +58,7 @@ int main(int args, char* argv[])
 
     auto err = network.AsyncConnect(ip, port, 1000,
     [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
-        if (!err) {
+        if (err.IsErr()) {
             BBT_BASE_LOG_ERROR("%s", err.CWhat());
             count_down_latch.down();
             return;
@@ -71,7 +71,7 @@ int main(int args, char* argv[])
         count_down_latch.down();
     });
 
-    if (!err)
+    if (err.IsErr())
         BBT_BASE_LOG_ERROR(err.CWhat());
     
     network.Start();
