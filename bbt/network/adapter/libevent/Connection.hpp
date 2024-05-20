@@ -49,16 +49,16 @@ class Connection:
 public:
     Connection(
         std::shared_ptr<libevent::IOThread> thread,
-        evutil_socket_t         socket,
-        const bbt::net::IPAddress&    ipaddr
+        evutil_socket_t                     socket,
+        const bbt::net::IPAddress&          ipaddr
     );
     virtual ~Connection();
 
 
     static std::shared_ptr<Connection> Create(
         std::shared_ptr<libevent::IOThread> thread,
-        evutil_socket_t         socket,
-        const bbt::net::IPAddress&    ipaddr
+        evutil_socket_t                     socket,
+        const bbt::net::IPAddress&          ipaddr
     );
     /* 设置Connection的回调行为 */
     void                    SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks);

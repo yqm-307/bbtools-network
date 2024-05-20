@@ -122,9 +122,11 @@ void Connection::RunInEventLoop()
         return;
 
     auto thread = GetBindThread();
+    printf("debug connect is runInThread! 1 %u\n", thread.get());
+    Assert(thread != nullptr);
     if (thread == nullptr)
         return;
-
+    printf("debug connect is runInThread! 1\n");
     m_event = thread->RegisterEvent(GetSocket(),
         EventOpt::CLOSE |       // 关闭事件
         EventOpt::PERSIST |     // 持久化
@@ -136,6 +138,7 @@ void Connection::RunInEventLoop()
     });
 
     m_event->StartListen(m_timeout_ms);
+    printf("debug connect is runInThread!\n");
 }
 
 void Connection::OnEvent(evutil_socket_t sockfd, short event)
@@ -239,8 +242,7 @@ int Connection::AsyncSend(const char* buf, size_t len)
     }
 
     /* 如果此时没有进行中的发送事件，则注册一个新的发送事件 */
-    RegistASendEvent();
-    return 0;
+    return RegistASendEvent();
 }
 
 int Connection::AppendOutputBuffer(const char* data, size_t len)
@@ -270,7 +272,6 @@ int Connection::RegistASendEvent()
     /* Swap 是无额外开销的 */
     {
         bbt::thread::lock::lock_guard<bbt::thread::lock::Mutex> lock(m_output_mutex);
-        BBT_BASE_LOG_TRACE("%ld, %ld", m_output_buffer.DataSize(), buffer_sptr->DataSize());
         buffer_sptr->Swap(m_output_buffer);
     }
 

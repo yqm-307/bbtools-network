@@ -15,7 +15,7 @@ void InitCallbacks()
 
     callbacks.on_err_callback =
     [](void* udata, const Errcode& err){
-        BBT_BASE_LOG_ERROR("%s", err.CWhat());
+        BBT_BASE_LOG_ERROR("errno=%s", err.CWhat());
     };
 
     callbacks.on_recv_callback =
@@ -82,7 +82,7 @@ int main(int args, char* argv[])
 
     auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(3));
     while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {
-        connection->AsyncSend(data, strlen(data));
+        Assert(connection->AsyncSend(data, strlen(data)) >= 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }   

@@ -21,7 +21,7 @@ bool LibeventConnection::BindThreadIsRunning()
         return false;
     
     auto thread = m_bind_thread.lock();
-    if (thread != nullptr)
+    if (thread == nullptr)
         return false;
     
     return thread->IsRunning();
