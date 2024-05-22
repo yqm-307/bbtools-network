@@ -9,16 +9,24 @@
  * 
  */
 #include <bbt/network/adapter/base/Connection.hpp>
+#include <atomic>
 
 namespace bbt::network::base
 {
 
+ConnId ConnectionBase::GenerateConnId()
+{
+    static std::atomic_uint64_t _id = 0;    // 返回值从1开始，0是非法值
+    return ++_id;
+}
+
 ConnectionBase::ConnectionBase(int socket, const bbt::net::IPAddress& addr)
     :m_socket_fd(socket),
-    m_peer_addr(addr)
+    m_peer_addr(addr),
+    m_conn_id(GenerateConnId())
 {
-    assert(m_socket_fd >= 0);
-
+    Assert(m_socket_fd >= 0);
+    Assert(m_conn_id > 0);
     m_conn_status = ConnStatus::CONNECTED;
 }
 
@@ -33,7 +41,7 @@ ConnectionBase::~ConnectionBase()
 
 ConnId ConnectionBase::GetConnId() const
 {
-    return GetMemberId();
+    return m_conn_id;
 }
 
 bool ConnectionBase::IsConnected() const

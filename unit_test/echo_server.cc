@@ -4,15 +4,15 @@
 using namespace bbt::network;
 using namespace bbt::network::libevent;
 
-class EchoClient
+class EchoServer
 {
     struct UData{ConnId connid{0};};
 public:
-    EchoClient(int thread_num, const char* ip, short port)
-        :m_network(thread_num)
+    EchoServer(int thread_num, const char* ip, short port)
     {
+        m_network.AutoInitThread(thread_num);
         m_network.StartListen(ip, port, [this](auto err, auto sptr){
-            if (err)
+            if (!err.IsErr())
                 OnNewConnection(sptr);
             else
                 BBT_BASE_LOG_ERROR("[%s]", err.CWhat());
@@ -49,13 +49,14 @@ public:
         };
     }
 
-    ~EchoClient()
+    ~EchoServer()
     {
     }
 
     void Start()
     {
         m_network.Start();
+        BBT_BASE_LOG_INFO("server start!");
         while(true)
             sleep(1);
     }
@@ -93,7 +94,7 @@ int main(int args, char* argv[])
     char*   ip          = argv[2];
     short   port        = (short)std::stoi(argv[3]);
 
-    EchoClient server{thread_num, ip, port};
+    EchoServer server{thread_num, ip, port};
 
 
     server.Start();

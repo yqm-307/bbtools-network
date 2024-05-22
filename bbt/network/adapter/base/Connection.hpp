@@ -33,8 +33,7 @@ typedef std::weak_ptr<ConnectionBase>   BaseConnectionWKPtr;
  * 
  */
 class ConnectionBase:
-    public bbt::network::interface::INetConnection,
-    public bbt::templateutil::MemberBase<ConnId, ConnectionBase>
+    public bbt::network::interface::INetConnection
 {
     friend class NetworkBase;
     friend class libevent::Network;
@@ -56,11 +55,12 @@ public:
 protected:
     virtual void            CloseSocket() final; 
     virtual void            SetStatus(ConnStatus status) final;
+    static ConnId           GenerateConnId();
 private:
     int                     m_socket_fd{-1};
     bbt::net::IPAddress     m_peer_addr;
     volatile ConnStatus     m_conn_status{ConnStatus::DEFAULT};
-
+    const ConnId            m_conn_id{0};
 };
 
 } // namespace bbt::network::base

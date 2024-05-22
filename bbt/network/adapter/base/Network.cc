@@ -53,27 +53,5 @@ BaseConnectionSPtr NetworkBase::GetConnById(ConnId conn_id)
     return conn_sptr;
 }
 
-NetworkBase::KeyType NetworkBase::GenerateKey(MemberPtr member)
-{
-    static bbt::uuid::EasyID<bbt::uuid::emEasyID::EM_AUTO_INCREMENT, 1> s_factory;
-    AssertWithInfo(member != nullptr, "it`s a wrong!");
-    return s_factory.GenerateID();
-}
-
-bool NetworkBase::OnMemberDestory(KeyType key)
-{
-    size_t num = m_conns_map.erase(key);
-    return (num != 0);
-}
-
-bool NetworkBase::OnMemberCreate(MemberPtr member)
-{
-    KeyType key = member->GetMemberId();
-
-    auto [it, succ] = m_conns_map.insert(std::make_pair(key, member));
-
-    return succ;
-}
-
 
 }

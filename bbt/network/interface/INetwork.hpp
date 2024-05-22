@@ -15,9 +15,6 @@
 namespace bbt::network::interface
 {
 
-typedef std::function<void(Errcode, INetConnectionSPtr)> OnConnectCallback;
-typedef std::function<void(Errcode, INetConnectionSPtr)> OnAcceptCallback;
-
 
 class INetwork
 {

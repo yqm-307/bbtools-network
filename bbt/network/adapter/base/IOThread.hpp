@@ -42,7 +42,8 @@ namespace base
  * 函数（SetWorkTask），启动时不需要重写启动逻辑，而是在做一些操作后调用IOThread
  * 已经处理好的线程启动逻辑（这个是必须的）.
  */
-class IOThread
+class IOThread:
+    public std::enable_shared_from_this<IOThread>
 {
 public:
     typedef std::function<void(IOThreadID)> HookCallback;

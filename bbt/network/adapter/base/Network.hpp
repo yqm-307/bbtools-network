@@ -19,8 +19,7 @@ namespace bbt::network::base
 {
 
 class NetworkBase:
-    public bbt::network::interface::INetwork,
-    public bbt::templateutil::ManagerBase<ConnId, ConnectionBase>
+    public bbt::network::interface::INetwork
 {
 public:
     NetworkBase();
@@ -35,12 +34,6 @@ public:
     virtual Errcode AsyncAccept(int listen_fd, const interface::OnAcceptCallback& onaccept_cb) override;
 
     virtual BaseConnectionSPtr GetConnById(ConnId conn_id) final;
-
-    virtual bool        OnMemberCreate(MemberPtr member) final;
-
-    virtual bool        OnMemberDestory(KeyType member) final;
-
-    virtual KeyType     GenerateKey(MemberPtr) final;
 protected:
     std::map<ConnId, BaseConnectionWKPtr> m_conns_map;  // 所有的连接
 };

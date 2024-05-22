@@ -15,7 +15,7 @@ void InitCallbacks()
 
     callbacks.on_err_callback =
     [](void* udata, const Errcode& err){
-        BBT_BASE_LOG_ERROR("%s", err.CWhat());
+        BBT_BASE_LOG_ERROR("errno=%s", err.CWhat());
     };
 
     callbacks.on_recv_callback =
@@ -48,15 +48,17 @@ int main(int args, char* argv[])
     int     port        = std::stoi(argv[2]);
 
 
-    Network network{1};
+    Network network;
+    network.AutoInitThread(1);
+    network.Start();
     ConnectionSPtr connection = nullptr;
     bbt::thread::lock::CountDownLatch count_down_latch{1};
     const char* data = "hello world";
     InitCallbacks();
 
-    network.AsyncConnect(ip, port, 1000,
+    auto err = network.AsyncConnect(ip, port, 1000,
     [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
-        if (!err) {
+        if (err.IsErr()) {
             BBT_BASE_LOG_ERROR("%s", err.CWhat());
             count_down_latch.down();
             return;
@@ -68,6 +70,9 @@ int main(int args, char* argv[])
         connection = sptr;
         count_down_latch.down();
     });
+
+    if (err.IsErr())
+        BBT_BASE_LOG_ERROR(err.CWhat());
     
     network.Start();
     count_down_latch.wait();
@@ -77,7 +82,7 @@ int main(int args, char* argv[])
 
     auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(3));
     while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {
-        connection->AsyncSend(data, strlen(data));
-        std::this_thread::sleep_for(std::chrono::milliseconds(1  ));
+        Assert(connection->AsyncSend(data, strlen(data)) >= 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }   
