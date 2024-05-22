@@ -122,11 +122,11 @@ void Connection::RunInEventLoop()
         return;
 
     auto thread = GetBindThread();
-    printf("debug connect is runInThread! 1 %u\n", thread.get());
+
     Assert(thread != nullptr);
     if (thread == nullptr)
         return;
-    printf("debug connect is runInThread! 1\n");
+
     m_event = thread->RegisterEvent(GetSocket(),
         EventOpt::CLOSE |       // 关闭事件
         EventOpt::PERSIST |     // 持久化
@@ -138,7 +138,6 @@ void Connection::RunInEventLoop()
     });
 
     m_event->StartListen(m_timeout_ms);
-    printf("debug connect is runInThread!\n");
 }
 
 void Connection::OnEvent(evutil_socket_t sockfd, short event)
