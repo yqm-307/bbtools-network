@@ -91,7 +91,7 @@ private:
                                     m_thread_map;
 
     NetworkStatus                   m_status{NetworkStatus::DEFAULT};
-    bbt::thread::lock::CountDownLatch*
+    bbt::thread::CountDownLatch*
                                     m_count_down_latch{nullptr};// 闭锁
 };
 

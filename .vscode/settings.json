@@ -75,5 +75,9 @@
         "event-internal.h": "c",
         "defer-internal.h": "c"
     },
-    "C_Cpp.default.compilerPath": "/usr/bin/g++"
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/bbt",
+    ]
 }

@@ -11,12 +11,10 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 include_directories(
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/bbt
 )
 
 file(GLOB_RECURSE SRCS 
     ${PROJECT_SOURCE_DIR}/bbt/*.cc
-    ${PROJECT_SOURCE_DIR}/bbt/*.hpp
 )
 
 add_library(bbt_network SHARED ${SRCS})

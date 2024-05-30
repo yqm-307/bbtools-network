@@ -10,7 +10,7 @@
  */
 #include <bbt/base/assert/Assert.hpp>
 #include <bbt/base/net/SocketUtil.hpp>
-#include <bbt/base/myhash/UuidMyHash.hpp>
+#include <bbt/base/hash/Hash.hpp>
 #include "bbt/network/adapter/libevent/IOThread.hpp"
 #include "bbt/network/adapter/libevent/EventLoop.hpp"
 

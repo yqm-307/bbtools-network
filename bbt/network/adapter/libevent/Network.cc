@@ -16,10 +16,10 @@
 namespace bbt::network::libevent
 {
 
-void WaitForCountDown(bbt::thread::lock::CountDownLatch* latch)
+void WaitForCountDown(bbt::thread::CountDownLatch* latch)
 {
-    latch->down();
-    latch->wait();
+    latch->Down();
+    latch->Wait();
 }
 
 Network::Network()
@@ -44,19 +44,19 @@ void Network::Start()
         return;
 
     m_status = NetworkStatus::STARTING;
-    m_count_down_latch = new bbt::thread::lock::CountDownLatch(m_thread_map.size());
+    m_count_down_latch = new bbt::thread::CountDownLatch(m_thread_map.size());
 
     // 启动子线程
     for (auto&& itor : m_thread_map) {
         itor.second->SetOnStart([=](auto){
-            m_count_down_latch->down();
+            m_count_down_latch->Down();
         });
     }
 
     for (auto&& thread : m_thread_map)
         thread.second->Start();
 
-    m_count_down_latch->wait();
+    m_count_down_latch->Wait();
     m_status = NetworkStatus::RUNNING;
 }
 

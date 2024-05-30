@@ -106,7 +106,7 @@ private:
      */
     bbt::buffer::Buffer     m_output_buffer;
     std::atomic_bool        m_output_buffer_is_free{true}; // 是否被发送事件占用
-    bbt::thread::lock::Mutex
+    bbt::thread::Mutex
                             m_output_mutex;
 
     int                     m_timeout_ms{CONNECTION_FREE_TIMEOUT_MS};           // 连接空闲超时事件

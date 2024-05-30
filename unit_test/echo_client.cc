@@ -52,7 +52,7 @@ int main(int args, char* argv[])
     network.AutoInitThread(1);
     network.Start();
     ConnectionSPtr connection = nullptr;
-    bbt::thread::lock::CountDownLatch count_down_latch{1};
+    bbt::thread::CountDownLatch count_down_latch{1};
     const char* data = "hello world";
     InitCallbacks();
 
@@ -60,7 +60,7 @@ int main(int args, char* argv[])
     [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
         if (err.IsErr()) {
             BBT_BASE_LOG_ERROR("%s", err.CWhat());
-            count_down_latch.down();
+            count_down_latch.Down();
             return;
         }
         auto sptr = std::static_pointer_cast<libevent::Connection>(new_conn);
@@ -68,14 +68,14 @@ int main(int args, char* argv[])
         sptr->SetOpt_Callbacks(callbacks);
 
         connection = sptr;
-        count_down_latch.down();
+        count_down_latch.Down();
     });
 
     if (err.IsErr())
         BBT_BASE_LOG_ERROR(err.CWhat());
     
     network.Start();
-    count_down_latch.wait();
+    count_down_latch.Wait();
 
     if (connection == nullptr)
         return -1;
