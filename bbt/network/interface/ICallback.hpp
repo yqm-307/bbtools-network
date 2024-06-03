@@ -48,7 +48,7 @@ public:
      */
     virtual void Close() = 0;
 
-    virtual void OnError(const Errcode& error) = 0;
+    virtual void OnError(const bbt::errcode::Errcode& error) = 0;
 };
 
 

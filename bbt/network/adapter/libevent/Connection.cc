@@ -94,10 +94,10 @@ void Connection::OnTimeout()
     m_callbacks.on_timeout_callback(shared_from_this());
 }
 
-void Connection::OnError(const Errcode& err)
+void Connection::OnError(const bbt::errcode::Errcode& err)
 {
     if (m_callbacks.on_err_callback) {
-        m_callbacks.on_err_callback(m_userdata, err);
+        m_callbacks.on_err_callback(m_userdata, dynamic_cast<const Errcode&>(err));
     }
 }
 

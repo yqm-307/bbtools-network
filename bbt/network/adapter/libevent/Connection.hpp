@@ -87,7 +87,7 @@ protected:
     virtual void            OnSend(const Errcode& err, size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
-    virtual void            OnError(const Errcode& err) override;
+    virtual void            OnError(const bbt::errcode::Errcode& err) override;
 
     int                     RegistASendEvent();
     int                     AppendOutputBuffer(const char* data, size_t len);
