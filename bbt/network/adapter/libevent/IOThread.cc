@@ -10,7 +10,6 @@
  */
 #include <bbt/base/assert/Assert.hpp>
 #include <bbt/base/net/SocketUtil.hpp>
-#include <bbt/base/hash/Hash.hpp>
 #include "bbt/network/adapter/libevent/IOThread.hpp"
 #include "bbt/network/adapter/libevent/EventLoop.hpp"
 
@@ -135,7 +134,7 @@ Errcode IOThread::Listen(const char* ip, short port, const OnAcceptCallback& ona
 
     auto fd = bbt::net::Util::CreateListen(ip, port, true);
     if (fd < 0)
-        return Errcode{"create listen socket failed!"};
+        return Errcode{"create listen socket failed! errno=" + std::to_string(errno) + ", errstr=" + std::string{strerror(errno)}};
 
     if (onaccept_cb == nullptr)
         return Errcode{"on accept callback is null!"};

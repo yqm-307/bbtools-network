@@ -14,6 +14,7 @@
 #include <bbt/base/timer/Clock.hpp>
 #include <bbt/base/buffer/Buffer.hpp>
 #include <bbt/base/poolutil/IDPool.hpp>
+#include <bbt/base/hash/BKDR.hpp>
 
 #include "bbt/network/adapter/libevent/Connection.hpp"
 #include "bbt/network/adapter/base/IOThread.hpp"
@@ -71,6 +72,7 @@ private:
     std::pair<Errcode, libevent::ConnectionSPtr> Accept(int listenfd, std::shared_ptr<libevent::IOThread> thread);
     void                    OnError(const Errcode& error);
 protected:
+    struct AddressHash { std::size_t operator()(const bbt::net::IPAddress& addr) const { return bbt::hash::BKDR::BKDRHash(addr.GetIPPort());}; };
     struct ConnectEventMapImpl
     {
         Errcode                         AddConnectEvent(std::shared_ptr<Event> event);
@@ -81,7 +83,7 @@ protected:
     };
 
     ConnectEventMapImpl         m_impl_connect_event_map;   // connect 事件集
-    std::unordered_map<bbt::net::IPAddress, std::shared_ptr<Event>>
+    std::unordered_map<bbt::net::IPAddress, std::shared_ptr<Event>, AddressHash>
                                 m_addr2event_map;
     std::shared_ptr<EventLoop>  m_eventloop{nullptr};
     std::mutex                  m_addr2event_mutex;
