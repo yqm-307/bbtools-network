@@ -40,6 +40,12 @@ void IOThread::Init()
 void IOThread::Destory()
 {
     m_eventloop = nullptr;
+
+    std::lock_guard<std::mutex> _(m_addr2event_mutex);
+    for (auto&& event : m_addr2event_map) {
+        auto addr = event.first;
+        UnListen(addr.GetIP().c_str(), addr.GetPort());
+    }
 }
 
 

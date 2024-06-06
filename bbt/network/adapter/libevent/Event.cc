@@ -69,6 +69,10 @@ Errcode Event::CancelListen()
     int         err;
 
     err = event_del(m_raw_event);
+    evutil_socket_t socket = GetSocket();
+
+    if (socket >= 0)
+        ::close(socket);
 
     if (err != 0) {
         return Errcode{"event_del() failed!"};
