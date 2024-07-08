@@ -1,5 +1,6 @@
-#include <bbt/network/adapter/libevent/Network.hpp>
 #include <event2/thread.h>
+#include <bbt/network/adapter/libevent/Network.hpp>
+#include <bbt/base/clock/Clock.hpp>
 
 typedef bbt::network::libevent::Network Network;
 typedef bbt::network::libevent::Connection Connection;
@@ -23,10 +24,14 @@ int main()
         auto ptr = std::static_pointer_cast<Connection>(i_sptr);
         bbt::network::libevent::ConnCallbacks callback;
         callback.on_err_callback = [](auto, const Errcode& err){
-            printf("[onerr] %s\n", err.CWhat());
+            printf("[onerr] %s %ld\n", err.CWhat(), bbt::clock::gettime());
         };
         callback.on_timeout_callback = [](auto conn){
+            printf("[ontimeout] %ld\n", bbt::clock::gettime());
             conn->Close();
+        };
+        callback.on_close_callback = [](void*, const bbt::net::IPAddress& addr){
+            printf("[onclose] %s %ld\n", addr.GetIPPort().c_str(), bbt::clock::gettime());
         };
 
         ptr->SetOpt_Callbacks(callback);
@@ -38,6 +43,8 @@ int main()
     // 防止主线程退出
     for (int i = 0; i < 2; ++i)
         sleep(5);
+    printf("2\n");
     network.Stop();
+    printf("3\n");
     printf("network stop!\n");
 }

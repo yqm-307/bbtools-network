@@ -22,6 +22,9 @@ int main()
         callbacks.on_timeout_callback = [](ConnectionSPtr conn){
             conn->Close();
         };
+        callbacks.on_close_callback = [](auto, const bbt::net::IPAddress& addr){
+            BBT_BASE_LOG_INFO("close connection, %s", addr.GetIPPort().c_str());
+        };
 
         sptr->SetOpt_Callbacks(callbacks);
         sptr->SetOpt_CloseTimeoutMS(500);

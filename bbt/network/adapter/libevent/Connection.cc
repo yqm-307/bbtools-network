@@ -141,7 +141,8 @@ void Connection::RunInEventLoop()
         pthis->OnEvent(event->GetSocket(), events);
     });
 
-    m_event->StartListen(m_timeout_ms);
+    int ret = m_event->StartListen(m_timeout_ms);
+    Assert(ret == 0);
 }
 
 void Connection::OnEvent(evutil_socket_t sockfd, short event)

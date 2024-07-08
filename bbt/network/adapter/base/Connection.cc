@@ -32,11 +32,7 @@ ConnectionBase::ConnectionBase(int socket, const bbt::net::IPAddress& addr)
 
 ConnectionBase::~ConnectionBase()
 {
-    if (m_socket_fd < 0)
-        return;
-
-    ::close(m_socket_fd);
-    m_socket_fd = -1;
+    CloseSocket();
 }
 
 ConnId ConnectionBase::GetConnId() const
