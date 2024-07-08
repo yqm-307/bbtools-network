@@ -12,9 +12,8 @@
 #include <bbt/base/buffer/Buffer.hpp>
 #include <bbt/base/thread/Lock.hpp>
 #include <bbt/network/Define.hpp>
-// #include <bbt/network/adapter/base/Connection.hpp>
 #include <bbt/network/adapter/libevent/LibeventConnection.hpp>
-#include <bbt/network/adapter/libevent/EventLoop.hpp>
+#include <bbt/pollevent/EventLoop.hpp>
 
 namespace bbt::network::libevent
 {
@@ -46,6 +45,7 @@ class Connection:
     public std::enable_shared_from_this<Connection>
 {
     friend class libevent::IOThread;
+    typedef bbt::pollevent::Event Event;
 public:
     Connection(
         std::shared_ptr<libevent::IOThread> thread,

@@ -10,7 +10,6 @@ int main()
 {
     int console_debug_flag = 1;
     BBT_CONFIG_QUICK_SET_DYNAMIC_ENTRY(int, &console_debug_flag, bbt::config::BBT_LOG_STDOUT_OPEN);
-    Assert(bbt::network::GlobalInit());
     Network network;
     network.AutoInitThread(1);
     std::vector<ConnectionSPtr> conn_vec;

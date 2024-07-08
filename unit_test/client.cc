@@ -10,8 +10,6 @@ typedef bbt::network::interface::INetConnectionSPtr INetConnectionSPtr;
 
 int main()
 {
-    Assert(bbt::network::GlobalInit());
-
     Network network;
     network.AutoInitThread(1);
     std::vector<ConnectionSPtr> conn_vec;

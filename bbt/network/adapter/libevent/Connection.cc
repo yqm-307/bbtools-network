@@ -13,11 +13,14 @@
 #include <bbt/base/Logger/Logger.hpp>
 #include <bbt/base/timer/Clock.hpp>
 #include <bbt/base/thread/Lock.hpp>
+#include <bbt/pollevent/Event.hpp>
 #include <bbt/network/adapter/libevent/Connection.hpp>
 #include <bbt/network/adapter/libevent/IOThread.hpp>
 
 namespace bbt::network::libevent
 {
+
+typedef bbt::pollevent::EventOpt EventOpt;
 
 std::shared_ptr<Connection> Connection::Create(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const bbt::net::IPAddress& ipaddr)
 {
@@ -106,10 +109,10 @@ void Connection::Close()
     if (IsClosed())
         return;
 
-    auto err = m_event->CancelListen();
+    auto ret = m_event->CancelListen();
     if (m_send_event)
         m_send_event->CancelListen();
-    if (err.IsErr()) OnError(err);
+    if (ret != 0) OnError(Errcode{"event cancel listen failed!"});
     
     CloseSocket();
     SetStatus(ConnStatus::DECONNECTED);

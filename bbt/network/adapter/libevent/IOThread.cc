@@ -10,11 +10,13 @@
  */
 #include <bbt/base/assert/Assert.hpp>
 #include <bbt/base/net/SocketUtil.hpp>
+#include <bbt/pollevent/EventLoop.hpp>
+#include <bbt/pollevent/Event.hpp>
 #include "bbt/network/adapter/libevent/IOThread.hpp"
-#include "bbt/network/adapter/libevent/EventLoop.hpp"
 
 namespace bbt::network::libevent
 {
+typedef bbt::pollevent::EventOpt EventOpt;
 
 IOThread::IOThread(std::shared_ptr<EventLoop> eventloop)
     :m_eventloop(eventloop)
@@ -56,10 +58,10 @@ void IOThread::evWorkFunc()
 void IOThread::WorkHandle()
 {
     auto err = m_eventloop->StartLoop(EVLOOP_NO_EXIT_ON_EMPTY);
-    Assert(!err.IsErr());
+    Assert(err == 0);
 }
 
-std::shared_ptr<EventLoop> IOThread::GetEventLoop() const
+std::shared_ptr<bbt::pollevent::EventLoop> IOThread::GetEventLoop() const
 {
     return m_eventloop;
 }
@@ -93,16 +95,16 @@ Errcode IOThread::Stop()
     m_addr2event_map.clear();
 
     auto err = m_eventloop->BreakLoop();
-    if (err.IsErr())
-        return err;
+    if (err != 0)
+        return Errcode{"stop failed!"};
     
     /* 阻塞式的等待 */
     SyncWaitThreadExit();
 
-    return err;
+    return FASTERR_NOTHING;
 }
 
-std::shared_ptr<Event> IOThread::RegisterEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb)
+std::shared_ptr<bbt::pollevent::Event> IOThread::RegisterEvent(evutil_socket_t fd, short events, const bbt::pollevent::OnEventCallback& onevent_cb)
 {
     auto event_sptr = m_eventloop->CreateEvent(fd, events, onevent_cb);
     return event_sptr;
@@ -222,8 +224,8 @@ Errcode IOThread::UnListen(const char* ip, short port)
 
     m_addr2event_map.erase(it);
     auto err = it->second->CancelListen();
-    if (err.IsErr())
-        return err;
+    if (err != 0)
+        return Errcode{"cancel event failed!"};
 
     return FASTERR_NOTHING;
 }

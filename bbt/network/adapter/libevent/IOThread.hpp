@@ -16,9 +16,10 @@
 #include <bbt/base/poolutil/IDPool.hpp>
 #include <bbt/base/hash/BKDR.hpp>
 
+#include <bbt/pollevent/EventLoop.hpp>
+
 #include "bbt/network/adapter/libevent/Connection.hpp"
 #include "bbt/network/adapter/base/IOThread.hpp"
-#include "bbt/network/adapter/libevent/EventLoop.hpp"
 
 namespace bbt::network::libevent
 {
@@ -29,6 +30,8 @@ typedef std::function<std::shared_ptr<libevent::IOThread>()>                    
 class IOThread:
     public base::IOThread
 {
+    typedef bbt::pollevent::EventLoop EventLoop;
+    typedef bbt::pollevent::Event Event;
 public:
     typedef std::function<void()>                                           IOWorkFunc;
     typedef std::function<void(const bbt::buffer::Buffer&, const Errcode&)> OnRecvCallback;
@@ -47,7 +50,7 @@ public:
 
 
     virtual Errcode         Stop() override;
-    std::shared_ptr<Event>  RegisterEvent(evutil_socket_t fd, short events, const OnEventCallback& onevent_cb);
+    std::shared_ptr<Event>  RegisterEvent(evutil_socket_t fd, short events, const bbt::pollevent::OnEventCallback& onevent_cb);
     std::shared_ptr<EventLoop> 
                             GetEventLoop() const;
     void                    SetOnStart(const HookCallback& on_thread_start_callback);

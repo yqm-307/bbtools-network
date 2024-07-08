@@ -20,8 +20,8 @@ file(GLOB_RECURSE SRCS
 add_library(bbt_network SHARED ${SRCS})
 
 target_link_libraries(bbt_network
-    event_core
     event_pthreads
+    bbt_pollevent
     pthread
 )
 

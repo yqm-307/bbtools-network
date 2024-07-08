@@ -40,6 +40,9 @@ class Network:
     bbt::network::base::NetworkBase
 {
     typedef std::shared_ptr<libevent::IOThread> ThreadSPtr;
+    typedef bbt::pollevent::Event Event;
+    typedef bbt::pollevent::EventLoop EventLoop;
+
 public:
     Network();
     virtual ~Network();
