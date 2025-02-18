@@ -165,7 +165,7 @@ Errcode Connection::Recv(evutil_socket_t sockfd)
 {
     int                 err          = 0;
     int                 read_len     = 0;
-    bbt::buffer::Buffer buffer;
+    bbt::core::Buffer buffer;
     char*               buffer_begin = buffer.Peek();
     size_t              buffer_len   = buffer.WriteableBytes();
     Errcode             errcode{"nothing", ErrType::ERRTYPE_NOTHING};
@@ -272,7 +272,7 @@ int Connection::RegistASendEvent()
      */
     AssertWithInfo(!m_output_buffer_is_free.load(), "output buffer must be false!");
     AssertWithInfo(!m_send_event , "has a wrong!");
-    auto buffer_sptr = std::make_shared<bbt::buffer::Buffer>();
+    auto buffer_sptr = std::make_shared<bbt::core::Buffer>();
     /* Swap 是无额外开销的 */
     {
         bbt::thread::lock_guard lock(m_output_mutex);
@@ -298,7 +298,7 @@ int Connection::RegistASendEvent()
     return 0;
 }
 
-void Connection::OnSendEvent(std::shared_ptr<bbt::buffer::Buffer> output_buffer, std::shared_ptr<Event> event, short events)
+void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events)
 {
     Errcode     err{"", ErrType::ERRTYPE_NOTHING};
     int         size = 0;

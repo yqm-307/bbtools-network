@@ -77,7 +77,7 @@ protected:
     /* 启动Connection */
     void                    RunInEventLoop();
     void                    OnEvent(evutil_socket_t sockfd, short events);
-    void                    OnSendEvent(std::shared_ptr<bbt::buffer::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
+    void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
 
     Errcode                 Recv(evutil_socket_t sockfd);
     size_t                  Send(const char* buf, size_t len);
@@ -104,7 +104,7 @@ private:
     /**
      * 异步写需要做输出缓存，这里策略是无限扩张的输出缓存。
      */
-    bbt::buffer::Buffer     m_output_buffer;
+    bbt::core::Buffer     m_output_buffer;
     std::atomic_bool        m_output_buffer_is_free{true}; // 是否被发送事件占用
     bbt::thread::Mutex
                             m_output_mutex;

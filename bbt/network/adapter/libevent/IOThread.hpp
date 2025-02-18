@@ -34,7 +34,7 @@ class IOThread:
     typedef bbt::pollevent::Event Event;
 public:
     typedef std::function<void()>                                           IOWorkFunc;
-    typedef std::function<void(const bbt::buffer::Buffer&, const Errcode&)> OnRecvCallback;
+    typedef std::function<void(const bbt::core::Buffer&, const Errcode&)> OnRecvCallback;
     typedef std::function<void(const Errcode&)>                             OnTimeOutCallback;
     typedef std::function<void(evutil_socket_t, short, void*)>              EventCallback;
 
