@@ -80,7 +80,7 @@ void ConnectionBase::OnRecv(const char* data, size_t len)
     OnError(Errcode{"ConnectionBase::OnRecv() emply implementation!"});
 }
 
-void ConnectionBase::OnSend(const Errcode& err, size_t succ_len)
+void ConnectionBase::OnSend(const bbt::errcode::Errcode& err, size_t succ_len)
 {
     OnError(Errcode{"ConnectionBase::OnSend() emply implementation!"});
 }

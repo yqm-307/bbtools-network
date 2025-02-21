@@ -26,7 +26,7 @@ public:
         };
 
         m_callback.on_err_callback =
-        [](void* udata, const Errcode& err){
+        [](void* udata, const bbt::errcode::Errcode& err){
             UData* data = reinterpret_cast<UData*>(udata);
             BBT_BASE_LOG_ERROR("[%d], %s", data->connid, err.CWhat());
         };
@@ -38,7 +38,7 @@ public:
         };
 
         m_callback.on_send_callback =
-        [](libevent::ConnectionSPtr conn, const Errcode& err, size_t send_len){
+        [](libevent::ConnectionSPtr conn, const bbt::errcode::Errcode& err, size_t send_len){
             BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
         };
 

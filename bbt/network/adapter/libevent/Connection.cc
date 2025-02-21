@@ -68,7 +68,7 @@ void Connection::OnRecv(const char* data, size_t len)
         m_callbacks.on_recv_callback(shared_from_this(), data, len);
 }
 
-void Connection::OnSend(const Errcode& err, size_t succ_len)
+void Connection::OnSend(const bbt::errcode::Errcode& err, size_t succ_len)
 {
     if (!m_callbacks.on_send_callback) {
         OnError(Errcode{"on send!, but no send callback!"});

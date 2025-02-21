@@ -14,7 +14,7 @@ void InitCallbacks()
     };
 
     callbacks.on_err_callback =
-    [](void* udata, const Errcode& err){
+    [](void* udata, const bbt::errcode::Errcode& err){
         BBT_BASE_LOG_ERROR("errno=%s", err.CWhat());
     };
 
@@ -24,7 +24,7 @@ void InitCallbacks()
     };
 
     callbacks.on_send_callback =
-    [](libevent::ConnectionSPtr conn, const Errcode& err, size_t send_len){
+    [](libevent::ConnectionSPtr conn, const bbt::errcode::Errcode& err, size_t send_len){
         BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
     };
 

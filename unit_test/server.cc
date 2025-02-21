@@ -16,7 +16,7 @@ int main()
 
     auto err = network.StartListen("127.0.0.1", 10010, [&network, &conn_vec](const Errcode& err, ConnectionSPtr sptr){
         bbt::network::libevent::ConnCallbacks callbacks;
-        callbacks.on_err_callback = [](auto, const bbt::network::Errcode& err){
+        callbacks.on_err_callback = [](auto, const bbt::errcode::Errcode& err){
             BBT_BASE_LOG_ERROR("%s", err.CWhat());
         };
         callbacks.on_timeout_callback = [](ConnectionSPtr conn){

@@ -24,11 +24,11 @@ typedef std::shared_ptr<Connection> ConnectionSPtr;
 
 typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> 
                                                                             OnRecvCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/, const Errcode& /*err */, size_t /*send_len*/)>   
+typedef std::function<void(ConnectionSPtr /*conn*/, const bbt::errcode::Errcode& /*err */, size_t /*send_len*/)>   
                                                                             OnSendCallback;
 typedef std::function<void(void* /*userdata*/, const bbt::net::IPAddress& )>OnCloseCallback;
 typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
-typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnConnErrorCallback;
+typedef std::function<void(void* /*userdata*/, const bbt::errcode::Errcode&)>             OnConnErrorCallback;
 
 struct ConnCallbacks
 {
@@ -84,7 +84,7 @@ protected:
     Errcode                 Timeout();
 
     virtual void            OnRecv(const char* data, size_t len) override;
-    virtual void            OnSend(const Errcode& err, size_t succ_len) override;
+    virtual void            OnSend(const bbt::errcode::Errcode& err, size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
     virtual void            OnError(const bbt::errcode::Errcode& err) override;

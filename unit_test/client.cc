@@ -23,7 +23,7 @@ int main()
         }
         auto ptr = std::static_pointer_cast<Connection>(i_sptr);
         bbt::network::libevent::ConnCallbacks callback;
-        callback.on_err_callback = [](auto, const Errcode& err){
+        callback.on_err_callback = [](auto, const bbt::errcode::Errcode& err){
             printf("[onerr] %s %ld\n", err.CWhat(), bbt::clock::gettime());
         };
         callback.on_timeout_callback = [](auto conn){
