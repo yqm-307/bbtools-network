@@ -31,7 +31,7 @@ public:
 
     virtual Errcode AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
 
-    virtual Errcode AsyncAccept(int listen_fd, const interface::OnAcceptCallback& onaccept_cb) override;
+    virtual Errcode StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
 
     virtual BaseConnectionSPtr GetConnById(ConnId conn_id) final;
 protected:

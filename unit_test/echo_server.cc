@@ -13,7 +13,7 @@ public:
         m_network.AutoInitThread(thread_num);
         m_network.StartListen(ip, port, [this](auto err, auto sptr){
             if (!err.IsErr())
-                OnNewConnection(sptr);
+                OnNewConnection(std::static_pointer_cast<libevent::Connection>(sptr));
             else
                 BBT_BASE_LOG_ERROR("[%s]", err.CWhat());
         });

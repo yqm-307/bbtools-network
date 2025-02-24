@@ -42,9 +42,18 @@ namespace bbt::network
 // 连接状态枚举
 enum ConnStatus
 {
-    DEFAULT     = 0,    // 默认状态
-    CONNECTED   = 1,    // 连接完成
-    DECONNECTED = 2,    // 断开连接
+    emCONN_DEFAULT     = 0,    // 默认状态
+    emCONN_CONNECTED   = 1,    // 连接完成
+    emCONN_DECONNECTED = 2,    // 断开连接
+};
+
+// 网络状态
+enum NetworkStatus
+{
+    emNETWORK_DEFAULT     = 0,
+    emNETWORK_STARTING    = 1,
+    emNETWORK_RUNNING     = 2,
+    emNETWORK_STOP        = 3,
 };
 
 // 连接id

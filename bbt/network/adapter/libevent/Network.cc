@@ -31,7 +31,7 @@ Network::~Network()
     delete m_count_down_latch;
     m_count_down_latch = nullptr;
 
-    if (Status() == NetworkStatus::RUNNING) {
+    if (Status() == NetworkStatus::emNETWORK_RUNNING) {
         Stop();
     }
 
@@ -40,10 +40,10 @@ Network::~Network()
 
 void Network::Start()
 {
-    if (m_status != NetworkStatus::DEFAULT)
+    if (m_status != NetworkStatus::emNETWORK_DEFAULT)
         return;
 
-    m_status = NetworkStatus::STARTING;
+    m_status = NetworkStatus::emNETWORK_STARTING;
     m_count_down_latch = new bbt::thread::CountDownLatch(m_thread_map.size());
 
     // 启动子线程
@@ -57,12 +57,12 @@ void Network::Start()
         thread.second->Start();
 
     m_count_down_latch->Wait();
-    m_status = NetworkStatus::RUNNING;
+    m_status = NetworkStatus::emNETWORK_RUNNING;
 }
 
 void Network::Stop()
 {
-    if (m_status != NetworkStatus::RUNNING)
+    if (m_status != NetworkStatus::emNETWORK_RUNNING)
         return;
 
     
@@ -73,7 +73,7 @@ void Network::Stop()
     /* 停止IO线程 */
     StopSubThread();
 
-    m_status = NetworkStatus::STOP;
+    m_status = NetworkStatus::emNETWORK_STOP;
 }
 
 Errcode Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread)
@@ -143,10 +143,10 @@ void Network::StopSubThread()
             Assert(!thread->Stop().IsErr());
     }
 
-    m_status = NetworkStatus::STOP;
+    m_status = NetworkStatus::emNETWORK_STOP;
 }
 
-Errcode Network::StartListen(const char* ip, short port, const OnAcceptCallback& onaccept_cb)
+Errcode Network::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
     if (listen_and_connect_thread == nullptr)

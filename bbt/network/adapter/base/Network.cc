@@ -36,7 +36,7 @@ Errcode NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, co
     return FASTERR_ERROR("empty implemention!");
 }
 
-Errcode NetworkBase::AsyncAccept(int listen_fd, const interface::OnAcceptCallback& onaccept_cb)
+Errcode NetworkBase::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }

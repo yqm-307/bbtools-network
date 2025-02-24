@@ -17,14 +17,6 @@
 namespace bbt::network::libevent
 {
 
-enum NetworkStatus
-{
-    DEFAULT     = 0,
-    STARTING    = 1,
-    RUNNING     = 2,
-    STOP        = 3,
-};
-
 enum IOThreadType : int
 {
     LISTENANDCONNECT        = 0,    // 监听线程
@@ -36,7 +28,7 @@ enum IOThreadType : int
 typedef std::function<void(const Errcode&, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
 typedef std::function<void(const Errcode&)>                                             OnNetworkErrorCallback;
 
-class Network:
+class Network final:
     bbt::network::base::NetworkBase
 {
     typedef std::shared_ptr<libevent::IOThread> ThreadSPtr;
@@ -50,20 +42,20 @@ public:
     virtual Errcode                 AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
 
     /* 初始化并设置监听事件 */
-    Errcode                         StartListen(const char* ip, short port, const OnAcceptCallback& onaccept_cb);
+    virtual Errcode                 StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
 
     /* 启动Network */
-    void                            Start();
+    void                            Start() override;
 
     /* 停止Network */
-    void                            Stop();
+    void                            Stop() override;
 
     /**
      * @brief 获取network的状态
      * 
      * @return NetworkStatus 
      */
-    NetworkStatus                   Status();
+    NetworkStatus                   Status() override;
 
     /**
      * @brief 添加一个IOThread
@@ -93,7 +85,7 @@ private:
     std::unordered_multimap<int, std::shared_ptr<libevent::IOThread>> 
                                     m_thread_map;
 
-    NetworkStatus                   m_status{NetworkStatus::DEFAULT};
+    NetworkStatus                   m_status{NetworkStatus::emNETWORK_DEFAULT};
     bbt::thread::CountDownLatch*
                                     m_count_down_latch{nullptr};// 闭锁
 };

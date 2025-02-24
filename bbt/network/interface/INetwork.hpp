@@ -51,14 +51,30 @@ public:
     virtual Errcode AsyncConnect(const char* ip, short port, int timeout_ms, const OnConnectCallback& onconnect_cb) = 0;
 
     /**
-     * @brief 接收一个连接，结果通过onaccept_cb通知调用者；此函数调用后
-     * 立即返回；连接可能成功也可能失败
+     * @brief 开启监听
      * 
-     * @param listen_fd     监听地址
+     * @param ip
+     * @param port
      * @param onaccept_cb   连接结果回调
      * @return Errcode 
      */
-    virtual Errcode AsyncAccept(int listen_fd, const OnAcceptCallback& onaccept_cb) = 0;
+    virtual Errcode StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) = 0;
+
+
+    /**
+     * @brief 启动network
+     */
+    virtual void Start() = 0;
+
+    /**
+     * @brief 停止network
+     */
+    virtual void Stop() = 0;
+
+    /**
+     * @brief 获取network的状态
+     */
+    virtual NetworkStatus Status() = 0;
 };
 
 }

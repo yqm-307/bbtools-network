@@ -27,7 +27,7 @@ ConnectionBase::ConnectionBase(int socket, const bbt::net::IPAddress& addr)
 {
     Assert(m_socket_fd >= 0);
     Assert(m_conn_id > 0);
-    m_conn_status = ConnStatus::CONNECTED;
+    m_conn_status = ConnStatus::emCONN_CONNECTED;
 }
 
 ConnectionBase::~ConnectionBase()
@@ -42,12 +42,12 @@ ConnId ConnectionBase::GetConnId() const
 
 bool ConnectionBase::IsConnected() const
 {
-    return (m_conn_status == ConnStatus::CONNECTED);
+    return (m_conn_status == ConnStatus::emCONN_CONNECTED);
 }
 
 bool ConnectionBase::IsClosed() const
 {
-    return (m_conn_status == ConnStatus::DECONNECTED);
+    return (m_conn_status == ConnStatus::emCONN_DECONNECTED);
 }
 
 const bbt::net::IPAddress& ConnectionBase::GetPeerAddress() const

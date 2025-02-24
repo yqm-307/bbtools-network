@@ -14,8 +14,9 @@ int main()
     network.AutoInitThread(1);
     std::vector<ConnectionSPtr> conn_vec;
 
-    auto err = network.StartListen("127.0.0.1", 10010, [&network, &conn_vec](const Errcode& err, ConnectionSPtr sptr){
+    auto err = network.StartListen("127.0.0.1", 10010, [&network, &conn_vec](const Errcode& err, INetConnectionSPtr sptr){
         bbt::network::libevent::ConnCallbacks callbacks;
+        std::shared_ptr<bbt::network::libevent::Connection> conn = std::dynamic_pointer_cast<bbt::network::libevent::Connection>(sptr);
         callbacks.on_err_callback = [](auto, const bbt::errcode::Errcode& err){
             BBT_BASE_LOG_ERROR("%s", err.CWhat());
         };
@@ -26,9 +27,9 @@ int main()
             BBT_BASE_LOG_INFO("close connection, %s", addr.GetIPPort().c_str());
         };
 
-        sptr->SetOpt_Callbacks(callbacks);
-        sptr->SetOpt_CloseTimeoutMS(500);
-        conn_vec.push_back(sptr);
+        conn->SetOpt_Callbacks(callbacks);
+        conn->SetOpt_CloseTimeoutMS(500);
+        conn_vec.push_back(conn);
         BBT_BASE_LOG_INFO("new connection!");
     });
 

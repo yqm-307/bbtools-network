@@ -115,7 +115,7 @@ void Connection::Close()
     if (ret != 0) OnError(Errcode{"event cancel listen failed!"});
     
     CloseSocket();
-    SetStatus(ConnStatus::DECONNECTED);
+    SetStatus(ConnStatus::emCONN_DECONNECTED);
     OnClose();
 }
 
