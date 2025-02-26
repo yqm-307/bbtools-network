@@ -29,7 +29,7 @@ typedef std::function<void(const Errcode&, libevent::ConnectionSPtr /* new_conn 
 typedef std::function<void(const Errcode&)>                                             OnNetworkErrorCallback;
 
 class Network final:
-    bbt::network::base::NetworkBase
+    public bbt::network::base::NetworkBase
 {
     typedef std::shared_ptr<libevent::IOThread> ThreadSPtr;
     typedef bbt::pollevent::Event Event;

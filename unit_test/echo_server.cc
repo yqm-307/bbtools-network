@@ -85,15 +85,14 @@ int main(int args, char* argv[])
 {
     int console_debug_flag = 1;
     BBT_CONFIG_QUICK_SET_DYNAMIC_ENTRY(int, &console_debug_flag, bbt::config::BBT_LOG_STDOUT_OPEN);
-    if (args != 4) {
-        printf("[usage] ./{exec_name} {thread_num} {ip} {port}");
+    if (args != 3) {
+        printf("[usage] ./{exec_name} {thread_num} {port}\n");
         exit(-1);
     }
     int     thread_num  = std::stoi(argv[1]);
-    char*   ip          = argv[2];
-    short   port        = (short)std::stoi(argv[3]);
+    short   port        = (short)std::stoi(argv[2]);
 
-    EchoServer server{thread_num, ip, port};
+    EchoServer server{thread_num, "", port};
 
 
     server.Start();
