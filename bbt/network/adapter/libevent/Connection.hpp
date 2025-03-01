@@ -24,7 +24,7 @@ typedef std::shared_ptr<Connection> ConnectionSPtr;
 
 typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> 
                                                                             OnRecvCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/, const bbt::errcode::Errcode& /*err */, size_t /*send_len*/)>   
+typedef std::function<void(ConnectionSPtr /*conn*/, bbt::errcode::ErrOpt /*err */, size_t /*send_len*/)>   
                                                                             OnSendCallback;
 typedef std::function<void(void* /*userdata*/, const bbt::net::IPAddress& )>OnCloseCallback;
 typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
@@ -79,12 +79,12 @@ protected:
     void                    OnEvent(evutil_socket_t sockfd, short events);
     void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
 
-    Errcode                 Recv(evutil_socket_t sockfd);
+    bbt::errcode::ErrOpt    Recv(evutil_socket_t sockfd);
     size_t                  Send(const char* buf, size_t len);
-    Errcode                 Timeout();
+    bbt::errcode::ErrOpt    Timeout();
 
     virtual void            OnRecv(const char* data, size_t len) override;
-    virtual void            OnSend(const bbt::errcode::Errcode& err, size_t succ_len) override;
+    virtual void            OnSend(bbt::errcode::ErrOpt err, size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
     virtual void            OnError(const bbt::errcode::Errcode& err) override;

@@ -21,22 +21,22 @@ NetworkBase::NetworkBase()
 NetworkBase::~NetworkBase()
 {}
 
-std::pair<Errcode, interface::INetConnectionSPtr> NetworkBase::Connect(const char* ip, short port)
+bbt::errcode::ErrTuple<interface::INetConnectionSPtr> NetworkBase::Connect(const char* ip, short port)
 {
     return {FASTERR_ERROR("empty implemention!"), nullptr};
 }
 
-std::pair<Errcode, interface::INetConnectionSPtr> NetworkBase::Accept(int listen_fd)
+bbt::errcode::ErrTuple<interface::INetConnectionSPtr> NetworkBase::Accept(int listen_fd)
 {   
     return {FASTERR_ERROR("empty implemention!"), nullptr};
 }
 
-Errcode NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb)
+bbt::errcode::ErrOpt NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }
 
-Errcode NetworkBase::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
+bbt::errcode::ErrOpt NetworkBase::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }

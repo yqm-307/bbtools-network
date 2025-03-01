@@ -76,17 +76,17 @@ void Network::Stop()
     m_status = NetworkStatus::emNETWORK_STOP;
 }
 
-Errcode Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread)
+errcode::ErrOpt Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread)
 {
 
     if (thread == nullptr)
-        return Errcode{"thread is null!"};
+        return FASTERR_ERROR("thread is null!");
 
     switch (type)
     {
     case IOThreadType::LISTENANDCONNECT :
         if (m_thread_map.count(IOThreadType::LISTENANDCONNECT) >= 1)
-            return Errcode{"listen thread can`t be more than 1!"};
+            return FASTERR_ERROR("listen thread can`t be more than 1!");
         m_thread_map.insert(std::make_pair(IOThreadType::LISTENANDCONNECT, thread));
         break;
 
@@ -96,9 +96,9 @@ Errcode Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThre
 
     default:
         if (type < 0)
-            return Errcode{"type less then 0!"};
+            return FASTERR_ERROR("type less then 0!");
         else if (type < IOThreadType::CUSTOM)
-            return Errcode{"nodefine thread type!"};
+            return FASTERR_ERROR("nodefine thread type!");
         else
             m_thread_map.insert(std::make_pair(type, thread));
         break;
@@ -107,10 +107,10 @@ Errcode Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThre
     return FASTERR_NOTHING;
 }
 
-Errcode Network::AutoInitThread(int sub_thread_num)
+errcode::ErrOpt Network::AutoInitThread(int sub_thread_num)
 {
     if (m_thread_map.size() != 0)
-        return Errcode{"thread is exist! please clear network thread!"}; // 已经通过其他方式初始化过线程了
+        return FASTERR_ERROR("thread is exist! please clear network thread!"); // 已经通过其他方式初始化过线程了
     
     auto eventloop = std::make_shared<EventLoop>();
     auto thread = std::make_shared<libevent::IOThread>(eventloop);
@@ -129,7 +129,7 @@ void Network::StopMainThread()
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
     if (listen_and_connect_thread->IsRunning()) {
-        Assert(!listen_and_connect_thread->Stop().IsErr());
+        Assert(!listen_and_connect_thread->Stop().has_value());
     }
 
     m_thread_map.erase(IOThreadType::LISTENANDCONNECT);
@@ -140,17 +140,17 @@ void Network::StopSubThread()
     for (auto&& itor : m_thread_map) {
         auto thread = itor.second;
         if (!thread->IsRunning())
-            Assert(!thread->Stop().IsErr());
+            Assert(!thread->Stop().has_value());
     }
 
     m_status = NetworkStatus::emNETWORK_STOP;
 }
 
-Errcode Network::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
+errcode::ErrOpt Network::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
     if (listen_and_connect_thread == nullptr)
-        return Errcode{"listen thread is null!"};
+        return FASTERR_ERROR("listen thread is null!");
 
     return listen_and_connect_thread->Listen(ip, port, onaccept_cb, GetAIOThread());
 }
@@ -175,25 +175,25 @@ Network::ThreadSPtr Network::GetListenAndConnectThread()
 }
 
 
-std::pair<Network::ThreadSPtr, Errcode> Network::GetThread(IOThreadType type)
+std::pair<Network::ThreadSPtr, errcode::ErrOpt> Network::GetThread(IOThreadType type)
 {
     static bbt::random::mt_random<> rd;
     if (type < 0) {
-        return {nullptr, Errcode{"bad thread type!"}};
+        return {nullptr, FASTERR_ERROR("bad thread type!")};
     }
 
     if (type == IOThreadType::LISTENANDCONNECT) {
     // Listen Connect 现成限制只能有一个
         auto count = m_thread_map.count(type);
         if (count != 1) 
-            return {nullptr, Errcode{"listen and connect thread num bad! count=" + std::to_string(count)}};
+            return {nullptr, FASTERR_ERROR("listen and connect thread num bad! count=" + std::to_string(count))};
         
         return {m_thread_map.find(type)->second, FASTERR_NOTHING}; // 只有一个item，则返回唯一的item
     } else {
     // 其他类型线程不限制数量
         auto count = m_thread_map.count(type);
         if (count <= 0)
-            return {nullptr, Errcode{"can`t found thread! type=" + std::to_string(type)}};
+            return {nullptr, FASTERR_ERROR("can`t found thread! type=" + std::to_string(type))};
 
         // 从一类threads中随机选择一个
         auto rand_index = rd() % count;
@@ -206,12 +206,12 @@ std::pair<Network::ThreadSPtr, Errcode> Network::GetThread(IOThreadType type)
 }
 
 
-Errcode Network::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
+errcode::ErrOpt Network::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
 
     if (listen_and_connect_thread == nullptr)
-        return Errcode{"listen thread is null!"};
+        return FASTERR_ERROR("listen thread is null!");
 
 
     return listen_and_connect_thread->AsyncConnect(ip, port, timeout_ms, onconnect);

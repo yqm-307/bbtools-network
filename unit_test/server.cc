@@ -3,7 +3,6 @@
 
 typedef bbt::network::libevent::Network Network;
 typedef bbt::network::libevent::ConnectionSPtr ConnectionSPtr;
-typedef bbt::network::Errcode Errcode;
 typedef bbt::network::interface::INetConnectionSPtr INetConnectionSPtr;
 
 int main()
@@ -14,7 +13,7 @@ int main()
     network.AutoInitThread(1);
     std::vector<ConnectionSPtr> conn_vec;
 
-    auto err = network.StartListen("127.0.0.1", 10010, [&network, &conn_vec](const Errcode& err, INetConnectionSPtr sptr){
+    auto err = network.StartListen("127.0.0.1", 10010, [&network, &conn_vec](bbt::errcode::ErrOpt err, INetConnectionSPtr sptr){
         bbt::network::libevent::ConnCallbacks callbacks;
         std::shared_ptr<bbt::network::libevent::Connection> conn = std::dynamic_pointer_cast<bbt::network::libevent::Connection>(sptr);
         callbacks.on_err_callback = [](auto, const bbt::errcode::Errcode& err){
@@ -33,9 +32,9 @@ int main()
         BBT_BASE_LOG_INFO("new connection!");
     });
 
-    if (err.IsErr()) {
-        BBT_BASE_LOG_INFO("%s", err.CWhat());
-        printf("%s\n", err.CWhat());
+    if (err.has_value()) {
+        BBT_BASE_LOG_INFO("%s", err->CWhat());
+        printf("%s\n", err->CWhat());
     }
 
     network.Start();

@@ -60,7 +60,7 @@ public:
     virtual void            Start();
 
     /* （对外接口）需要子类实现: 调用此函数阻塞的等待 work 线程调用完毕 */
-    virtual Errcode         Stop() = 0;
+    virtual bbt::errcode::ErrOpt Stop() = 0;
 
     /* 工作函数 */
     virtual void            WorkHandle() = 0;

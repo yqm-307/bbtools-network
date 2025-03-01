@@ -24,7 +24,7 @@ void InitCallbacks()
     };
 
     callbacks.on_send_callback =
-    [](libevent::ConnectionSPtr conn, const bbt::errcode::Errcode& err, size_t send_len){
+    [](libevent::ConnectionSPtr conn, bbt::errcode::ErrOpt err, size_t send_len){
         BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
     };
 
@@ -57,8 +57,8 @@ int main(int args, char* argv[])
 
     auto err = network.AsyncConnect(ip, port, 1000,
     [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
-        if (err.IsErr()) {
-            BBT_BASE_LOG_ERROR("%s", err.CWhat());
+        if (err.has_value()) {
+            BBT_BASE_LOG_ERROR("%s", err->CWhat());
             count_down_latch.Down();
             return;
         }
@@ -70,8 +70,8 @@ int main(int args, char* argv[])
         count_down_latch.Down();
     });
 
-    if (err.IsErr())
-        BBT_BASE_LOG_ERROR(err.CWhat());
+    if (err.has_value())
+        BBT_BASE_LOG_ERROR(err->CWhat());
     
     network.Start();
     count_down_latch.Wait();

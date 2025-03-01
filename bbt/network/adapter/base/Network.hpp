@@ -25,13 +25,13 @@ public:
     NetworkBase();
     ~NetworkBase();
 
-    virtual std::pair<Errcode, interface::INetConnectionSPtr> Connect(const char* ip, short port) override;
+    virtual bbt::errcode::ErrTuple<interface::INetConnectionSPtr> Connect(const char* ip, short port) override;
 
-    virtual std::pair<Errcode, interface::INetConnectionSPtr> Accept(int listen_fd) override;
+    virtual bbt::errcode::ErrTuple<interface::INetConnectionSPtr> Accept(int listen_fd) override;
 
-    virtual Errcode AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
+    virtual bbt::errcode::ErrOpt AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
 
-    virtual Errcode StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
+    virtual bbt::errcode::ErrOpt StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
 
     virtual BaseConnectionSPtr GetConnById(ConnId conn_id) final;
 protected:

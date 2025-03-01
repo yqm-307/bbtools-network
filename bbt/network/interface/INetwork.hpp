@@ -27,7 +27,7 @@ public:
      * @param port          对端端口
      * @return std::pair<Errcode, INetConnection*> 
      */
-    virtual std::pair<Errcode, INetConnectionSPtr> Connect(const char* ip, short port) = 0;
+    virtual bbt::errcode::ErrTuple<interface::INetConnectionSPtr> Connect(const char* ip, short port) = 0;
 
     /**
      * @brief 从listen_fd获取一个新的来自其他主机的连接，在获取到结果前
@@ -36,7 +36,7 @@ public:
      * @param listen_fd     监听套接字
      * @return std::pair<Errcode, INetConnection*> 
      */
-    virtual std::pair<Errcode, INetConnectionSPtr> Accept(int listen_fd) = 0;
+    virtual bbt::errcode::ErrTuple<interface::INetConnectionSPtr> Accept(int listen_fd) = 0;
 
     /**
      * @brief 与地址{ip:port}的主机建立连接，当连接完成时通过onconnect_cb
@@ -48,7 +48,7 @@ public:
      * @param onconnect_cb  连接结果回调
      * @return Errcode 
      */
-    virtual Errcode AsyncConnect(const char* ip, short port, int timeout_ms, const OnConnectCallback& onconnect_cb) = 0;
+    virtual bbt::errcode::ErrOpt AsyncConnect(const char* ip, short port, int timeout_ms, const OnConnectCallback& onconnect_cb) = 0;
 
     /**
      * @brief 开启监听
@@ -58,7 +58,7 @@ public:
      * @param onaccept_cb   连接结果回调
      * @return Errcode 
      */
-    virtual Errcode StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) = 0;
+    virtual bbt::errcode::ErrOpt StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) = 0;
 
 
     /**

@@ -36,41 +36,4 @@ enum ErrType : bbt::errcode::ErrType
     ERRTYPE_CONNECT_TRY_AGAIN                   = 404,          // 忙，请稍后重试
 };
 
-class Errcode:
-    public bbt::errcode::Errcode
-{
-public:
-    Errcode(const std::string& info, ErrType type = ErrType::ERRTYPE_ERROR)
-        :bbt::errcode::Errcode(info, type)
-    {
-    }
-
-    Errcode(const Errcode& err)
-        :bbt::errcode::Errcode(err)
-    {
-    }
-    
-    Errcode(Errcode&& err)
-        :bbt::errcode::Errcode(err)
-    {
-    }
-
-    Errcode& operator=(const Errcode& other)
-    {
-        m_err_msg = other.m_err_msg;
-        m_err_type = other.m_err_type;
-        return *this;
-    }
-
-    Errcode& operator=(Errcode&& other)
-    {
-        m_err_msg = std::move(other.m_err_msg);
-        m_err_type = other.m_err_type;
-        return *this;
-    }
-
-    virtual bool IsErr() const override
-    { return (Type() != bbt::network::ERRTYPE_NOTHING); }
-};
-
 }

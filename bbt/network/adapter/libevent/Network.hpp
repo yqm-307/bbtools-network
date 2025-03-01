@@ -25,8 +25,8 @@ enum IOThreadType : int
     CUSTOM                  = 10,   // 从此开始都是自定义
 };
 
-typedef std::function<void(const Errcode&, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
-typedef std::function<void(const Errcode&)>                                             OnNetworkErrorCallback;
+typedef std::function<void(errcode::ErrOpt, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
+typedef std::function<void(errcode::ErrOpt)>                                             OnNetworkErrorCallback;
 
 class Network final:
     public bbt::network::base::NetworkBase
@@ -39,10 +39,10 @@ public:
     Network();
     virtual ~Network();
 
-    virtual Errcode                 AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
+    virtual errcode::ErrOpt         AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
 
     /* 初始化并设置监听事件 */
-    virtual Errcode                 StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
+    virtual errcode::ErrOpt         StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
 
     /* 启动Network */
     void                            Start() override;
@@ -62,21 +62,21 @@ public:
      * 
      * @param type 
      * @param thread 
-     * @return Errcode 
+     * @return errcode::ErrOpt 
      */
-    Errcode                         AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread);
+    errcode::ErrOpt                 AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread);
 
     /**
      * @brief 自动创建主线程和sub_thread_num数量的IO线程
      * 
      * @param sub_thread_num 
-     * @return Errcode 
+     * @return errcode::ErrOpt 
      */
-    Errcode                         AutoInitThread(int sub_thread_num);
+    errcode::ErrOpt                 AutoInitThread(int sub_thread_num);
 
     ThreadSPtr                      GetAIOThread();
 protected:
-    std::pair<ThreadSPtr, Errcode>  GetThread(IOThreadType type);
+    std::pair<ThreadSPtr, errcode::ErrOpt> GetThread(IOThreadType type);
     ThreadSPtr                      GetListenAndConnectThread();
 
     void                            StopMainThread();

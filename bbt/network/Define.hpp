@@ -63,6 +63,6 @@ typedef uint64_t EventId;
 
 }
 
-#define FASTERR_ERROR(info) Errcode(info, ErrType::ERRTYPE_ERROR)
-
-#define FASTERR_NOTHING Errcode("", ErrType::ERRTYPE_NOTHING)
+#define FASTERR(info, type) std::make_optional<bbt::errcode::Errcode>(info, type)
+#define FASTERR_ERROR(info) FASTERR(info, bbt::network::ErrType::ERRTYPE_ERROR)
+#define FASTERR_NOTHING std::nullopt

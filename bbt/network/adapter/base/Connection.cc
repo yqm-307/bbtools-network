@@ -77,22 +77,22 @@ void ConnectionBase::SetStatus(ConnStatus status)
 
 void ConnectionBase::OnRecv(const char* data, size_t len)
 {
-    OnError(Errcode{"ConnectionBase::OnRecv() emply implementation!"});
+    OnError(bbt::errcode::Errcode{"ConnectionBase::OnRecv() emply implementation!", bbt::network::ERRTYPE_ERROR});
 }
 
-void ConnectionBase::OnSend(const bbt::errcode::Errcode& err, size_t succ_len)
+void ConnectionBase::OnSend(bbt::errcode::ErrOpt err, size_t succ_len)
 {
-    OnError(Errcode{"ConnectionBase::OnSend() emply implementation!"});
+    OnError(bbt::errcode::Errcode{"ConnectionBase::OnSend() emply implementation!", bbt::network::ERRTYPE_ERROR});
 }
 
 void ConnectionBase::OnClose()
 {
-    OnError(Errcode{"ConnectionBase::OnClose() emply implementation!"});
+    OnError(bbt::errcode::Errcode{"ConnectionBase::OnClose() emply implementation!", bbt::network::ERRTYPE_ERROR});
 }
 
 void ConnectionBase::OnTimeout()
 {
-    OnError(Errcode{"ConnectionBase::OnTimeout() emply implementation!"});
+    OnError(bbt::errcode::Errcode{"ConnectionBase::OnTimeout() emply implementation!", bbt::network::ERRTYPE_ERROR});
 }
 
 evutil_socket_t ConnectionBase::GetSocket() const

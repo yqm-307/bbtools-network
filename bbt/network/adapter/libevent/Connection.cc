@@ -61,17 +61,17 @@ void Connection::GetUserData(void* userdata)
 void Connection::OnRecv(const char* data, size_t len)
 {
     if (!m_callbacks.on_recv_callback) {
-        OnError(Errcode{"on recv!, but no recv callback!"});
+        OnError(bbt::errcode::Errcode{"on recv!, but no recv callback!", ERRTYPE_ERROR});
         return;
     }
 
         m_callbacks.on_recv_callback(shared_from_this(), data, len);
 }
 
-void Connection::OnSend(const bbt::errcode::Errcode& err, size_t succ_len)
+void Connection::OnSend(bbt::errcode::ErrOpt err, size_t succ_len)
 {
     if (!m_callbacks.on_send_callback) {
-        OnError(Errcode{"on send!, but no send callback!"});
+        OnError(bbt::errcode::Errcode{"on send!, but no send callback!", ERRTYPE_ERROR});
         return;
     }
 
@@ -81,7 +81,7 @@ void Connection::OnSend(const bbt::errcode::Errcode& err, size_t succ_len)
 void Connection::OnClose()
 {
     if (!m_callbacks.on_close_callback) {
-        OnError(Errcode{"on closed!, but no close callback!"});
+        OnError(bbt::errcode::Errcode{"on closed!, but no close callback!", ERRTYPE_ERROR});
         return;
     }
 
@@ -91,7 +91,7 @@ void Connection::OnClose()
 void Connection::OnTimeout()
 {
     if (!m_callbacks.on_timeout_callback) {
-        OnError(Errcode{"on timeout!, but no timeout callback!"});
+        OnError(bbt::errcode::Errcode{"on timeout!, but no timeout callback!", ERRTYPE_ERROR});
         return;
     }
     m_callbacks.on_timeout_callback(shared_from_this());
@@ -100,7 +100,7 @@ void Connection::OnTimeout()
 void Connection::OnError(const bbt::errcode::Errcode& err)
 {
     if (m_callbacks.on_err_callback) {
-        m_callbacks.on_err_callback(m_userdata, dynamic_cast<const Errcode&>(err));
+        m_callbacks.on_err_callback(m_userdata, err);
     }
 }
 
@@ -112,7 +112,7 @@ void Connection::Close()
     auto ret = m_event->CancelListen();
     if (m_send_event)
         m_send_event->CancelListen();
-    if (ret != 0) OnError(Errcode{"event cancel listen failed!"});
+    if (ret != 0) OnError(bbt::errcode::Errcode{"event cancel listen failed!", ERRTYPE_ERROR});
     
     CloseSocket();
     SetStatus(ConnStatus::emCONN_DECONNECTED);
@@ -150,8 +150,8 @@ void Connection::OnEvent(evutil_socket_t sockfd, short event)
     if (event & EventOpt::READABLE) {
         /* 尝试读取套接字数据，如果对端关闭，一并关闭此连接 */
         auto err = Recv(sockfd);
-        if (err.IsErr()) OnError(err);
-        if (err.Type() == ErrType::ERRTYPE_NETWORK_RECV_EOF)
+        if (err.has_value()) OnError(err.value());
+        if (err.has_value() && err.value().Type() == ErrType::ERRTYPE_NETWORK_RECV_EOF)
             Close();
     } else if (event & EventOpt::TIMEOUT) {
         /* 当连接空闲超时时，直接通过用户注册的回调通知用户 */
@@ -161,14 +161,14 @@ void Connection::OnEvent(evutil_socket_t sockfd, short event)
     }
 }
 
-Errcode Connection::Recv(evutil_socket_t sockfd)
+bbt::errcode::ErrOpt Connection::Recv(evutil_socket_t sockfd)
 {
     int                 err          = 0;
     int                 read_len     = 0;
     bbt::core::Buffer buffer;
     char*               buffer_begin = buffer.Peek();
     size_t              buffer_len   = buffer.WriteableBytes();
-    Errcode             errcode{"nothing", ErrType::ERRTYPE_NOTHING};
+    bbt::errcode::ErrOpt errcode = std::nullopt;
 
     if (IsClosed()) {
         return FASTERR_ERROR("conn is closed, but event was not cancel! peer:" + GetPeerAddress().GetIPPort());
@@ -179,20 +179,20 @@ Errcode Connection::Recv(evutil_socket_t sockfd)
 
     if (read_len == -1) {
         if (errno == EINTR || errno == EAGAIN) {
-            errcode = Errcode{"please try again!", ERRTYPE_NETWORK_RECV_TRY_AGAIN};
+            errcode = std::make_optional<bbt::errcode::Errcode>("please try again!", ERRTYPE_NETWORK_RECV_TRY_AGAIN);
         } else if (errno == ECONNREFUSED) {
-            errcode = Errcode{"connect refused!", ERRTYPE_NETWORK_RECV_CONNREFUSED};
+            errcode = std::make_optional<bbt::errcode::Errcode>("connect refused!", ERRTYPE_NETWORK_RECV_CONNREFUSED);
         } else {
-            errcode = Errcode{"other errno! errno=" + std::to_string(errno), ERRTYPE_NETWORK_RECV_OTHER_ERR};
+            errcode = std::make_optional<bbt::errcode::Errcode>("other errno! errno=" + std::to_string(errno), ERRTYPE_NETWORK_RECV_OTHER_ERR);
         }
 
     } else if (read_len == 0) {
-        errcode = Errcode{"peer connect closed!", ERRTYPE_NETWORK_RECV_EOF};
+        errcode = std::make_optional<bbt::errcode::Errcode>("peer connect closed!", ERRTYPE_NETWORK_RECV_EOF);
     } else if (read_len < -1) {
-        errcode = Errcode{"other error! please debug!", ERRTYPE_NETWORK_RECV_OTHER_ERR};
+        errcode = std::make_optional<bbt::errcode::Errcode>("other error! please debug!", ERRTYPE_NETWORK_RECV_OTHER_ERR);
     }
 
-    if (errcode.IsErr())
+    if (errcode.has_value())
         return errcode;
 
     OnRecv(buffer_begin, read_len);
@@ -231,7 +231,7 @@ int Connection::AsyncSend(const char* buf, size_t len)
      */
     if (!IsConnected()) {
         std::string info = bbt::log::format("send error! connection is disconnect! sockfd=%d, status=%d", GetSocket(), IsConnected() ? 1 : 0);
-        OnError(FASTERR_ERROR(info));
+        OnError(bbt::errcode::Errcode{info, ERRTYPE_ERROR});
         return -1;
     }
 
@@ -300,12 +300,12 @@ int Connection::RegistASendEvent()
 
 void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events)
 {
-    Errcode     err{"", ErrType::ERRTYPE_NOTHING};
-    int         size = 0;
+    bbt::errcode::ErrOpt err = std::nullopt;
+    int size = 0;
 
     if (IsClosed()) return;
     if (events & EventOpt::TIMEOUT) {
-        err = Errcode{"send timeout!", ERRTYPE_SEND_TIMEOUT};
+        err = std::make_optional<bbt::errcode::Errcode>("send timeout!", ERRTYPE_SEND_TIMEOUT);
     } else if (events & EventOpt::WRITEABLE) {
         size = Send(output_buffer->Peek(), output_buffer->DataSize());
     }
@@ -326,7 +326,7 @@ void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, s
 }
 
 
-Errcode Connection::Timeout()
+bbt::errcode::ErrOpt Connection::Timeout()
 {
     OnTimeout();
     Close();

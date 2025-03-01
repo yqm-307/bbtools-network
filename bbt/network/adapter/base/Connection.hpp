@@ -46,7 +46,7 @@ public:
     virtual bool            IsClosed() const override final;
     virtual void            Close() override;
     virtual void            OnRecv(const char* data, size_t len) override;
-    virtual void            OnSend(const bbt::errcode::Errcode& err, size_t succ_len) override;
+    virtual void            OnSend(bbt::errcode::ErrOpt err, size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
     virtual const bbt::net::IPAddress& GetPeerAddress() const override final;

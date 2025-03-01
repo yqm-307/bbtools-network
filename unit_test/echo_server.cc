@@ -12,10 +12,10 @@ public:
     {
         m_network.AutoInitThread(thread_num);
         m_network.StartListen(ip, port, [this](auto err, auto sptr){
-            if (!err.IsErr())
+            if (!err.has_value())
                 OnNewConnection(std::static_pointer_cast<libevent::Connection>(sptr));
             else
-                BBT_BASE_LOG_ERROR("[%s]", err.CWhat());
+                BBT_BASE_LOG_ERROR("[%s]", err->CWhat());
         });
 
         m_callback.on_close_callback = 
@@ -38,7 +38,7 @@ public:
         };
 
         m_callback.on_send_callback =
-        [](libevent::ConnectionSPtr conn, const bbt::errcode::Errcode& err, size_t send_len){
+        [](libevent::ConnectionSPtr conn, bbt::errcode::ErrOpt err, size_t send_len){
             BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
         };
 

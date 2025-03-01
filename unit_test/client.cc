@@ -5,7 +5,6 @@
 typedef bbt::network::libevent::Network Network;
 typedef bbt::network::libevent::Connection Connection;
 typedef bbt::network::libevent::ConnectionSPtr ConnectionSPtr;
-typedef bbt::network::Errcode Errcode;
 typedef bbt::network::interface::INetConnectionSPtr INetConnectionSPtr;
 
 
@@ -16,9 +15,9 @@ int main()
     std::vector<ConnectionSPtr> conn_vec;
 
     network.AsyncConnect("127.0.0.1", 10010, 1000,
-    [&network, &conn_vec](Errcode err, INetConnectionSPtr i_sptr){
-        if (err.IsErr()) {
-            printf("connect err! %s\n", err.CWhat());
+    [&network, &conn_vec](bbt::errcode::ErrOpt err, INetConnectionSPtr i_sptr){
+        if (err.has_value()) {
+            printf("connect err! %s\n", err->CWhat());
             return;
         }
         auto ptr = std::static_pointer_cast<Connection>(i_sptr);
