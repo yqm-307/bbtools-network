@@ -165,17 +165,18 @@ bbt::errcode::ErrOpt Connection::Recv(evutil_socket_t sockfd)
 {
     int                 err          = 0;
     int                 read_len     = 0;
-    bbt::core::Buffer buffer;
-    char*               buffer_begin = buffer.Peek();
-    size_t              buffer_len   = buffer.WriteableBytes();
+    bbt::core::Buffer   buffer;
+    char*               buffer_begin = nullptr;
+    size_t              buffer_len   = 4096;
     bbt::errcode::ErrOpt errcode = std::nullopt;
 
     if (IsClosed()) {
         return FASTERR_ERROR("conn is closed, but event was not cancel! peer:" + GetPeerAddress().GetIPPort());
     }
 
+    buffer.WriteNull(buffer_len);
+    buffer_begin = buffer.Peek();
     read_len = ::read(sockfd, buffer_begin, buffer_len);
-    buffer.WriteNull(read_len);
 
     if (read_len == -1) {
         if (errno == EINTR || errno == EAGAIN) {
@@ -205,7 +206,6 @@ size_t Connection::Send(const char* buf, size_t len)
     int remain = len;
     while (remain > 0) {
         int n = ::send(GetSocket(), (buf + (len - remain)), remain, MSG_NOSIGNAL);
-        // int n = ::write(GetSocket(), (buf + (len - remain)), remain);
         if (n < 0) {
             if (errno == EPIPE) {
                 Close();
@@ -252,9 +252,9 @@ int Connection::AsyncSend(const char* buf, size_t len)
 int Connection::AppendOutputBuffer(const char* data, size_t len)
 {
     bbt::thread::lock_guard lock(m_output_mutex);
-    auto before_size = m_output_buffer.DataSize();
+    auto before_size = m_output_buffer.Size();
     m_output_buffer.WriteString(data, len);
-    auto after_size = m_output_buffer.DataSize();
+    auto after_size = m_output_buffer.Size();
 
     int change_num = after_size - before_size;
 
@@ -307,21 +307,22 @@ void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, s
     if (events & EventOpt::TIMEOUT) {
         err = std::make_optional<bbt::errcode::Errcode>("send timeout!", ERRTYPE_SEND_TIMEOUT);
     } else if (events & EventOpt::WRITEABLE) {
-        size = Send(output_buffer->Peek(), output_buffer->DataSize());
+        size = Send(output_buffer->Peek(), output_buffer->Size());
     }
 
     OnSend(err, size);
 
     /* 当连接已经关闭后，也退出事件；
     有待发送数据，交换buffer，继续发送；否则取消监听事件，释放标志位 */
-    if (IsClosed() || m_output_buffer.DataSize() <= 0) {
+    if (IsClosed() || m_output_buffer.Size() <= 0) {
         m_send_event->CancelListen();
         m_send_event = nullptr;
         m_output_buffer_is_free.exchange(true); // 允许注册发送事件
     } else {
         bbt::thread::lock_guard lock(m_output_mutex);
-        Assert(output_buffer->DataSize() >= 0);
+        Assert(output_buffer->Size() >= 0);
         output_buffer->Swap(m_output_buffer);
+        m_output_buffer.Clear();
     }
 }
 
