@@ -4,7 +4,7 @@
 namespace bbt::network::libevent
 {
 
-LibeventConnection::LibeventConnection(std::shared_ptr<libevent::IOThread> bind_thread, int socket, const bbt::net::IPAddress& addr)
+LibeventConnection::LibeventConnection(std::shared_ptr<libevent::IOThread> bind_thread, int socket, const IPAddress& addr)
     :base::ConnectionBase(socket, addr), m_bind_thread(bind_thread) 
 {
 }

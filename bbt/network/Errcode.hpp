@@ -9,13 +9,15 @@
  * 
  */
 #pragma once
-#include <bbt/base/errcode/Errcode.hpp>
+#include <bbt/core/errcode/Errcode.hpp>
 #include <bbt/network/Define.hpp>
 
 namespace bbt::network
 {
 
-enum ErrType : bbt::errcode::ErrType
+using namespace bbt::core::errcode;
+
+enum ErrType : bbt::core::errcode::ErrType
 {
     ERRTYPE_NOTHING = 0,    // 没有问题
     ERRTYPE_ERROR = 1,      // 错误

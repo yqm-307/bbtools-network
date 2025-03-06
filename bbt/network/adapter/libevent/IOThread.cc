@@ -8,8 +8,7 @@
  * @copyright Copyright (c) 2024
  * 
  */
-#include <bbt/base/assert/Assert.hpp>
-#include <bbt/base/net/SocketUtil.hpp>
+#include <bbt/core/net/SocketUtil.hpp>
 #include <bbt/pollevent/EventLoop.hpp>
 #include <bbt/pollevent/Event.hpp>
 #include "bbt/network/adapter/libevent/IOThread.hpp"
@@ -81,13 +80,13 @@ void IOThread::SetOnError(const OnErrorCallback& onerror)
     m_on_error = onerror;
 }
 
-void IOThread::OnError(bbt::errcode::ErrOpt error)
+void IOThread::OnError(ErrOpt error)
 {
     Assert(m_on_error != nullptr);
     m_on_error(error);
 }
 
-bbt::errcode::ErrOpt IOThread::Stop()
+ErrOpt IOThread::Stop()
 {
     if (m_status == Finish)
         return FASTERR_NOTHING;
@@ -96,7 +95,7 @@ bbt::errcode::ErrOpt IOThread::Stop()
 
     auto err = m_eventloop->BreakLoop();
     if (err != 0)
-        return std::make_optional<bbt::errcode::Errcode>("stop failed!", ERRTYPE_ERROR);
+        return std::make_optional<Errcode>("stop failed!", ERRTYPE_ERROR);
     
     /* 阻塞式的等待 */
     SyncWaitThreadExit();
@@ -110,7 +109,7 @@ std::shared_ptr<bbt::pollevent::Event> IOThread::RegisterEvent(evutil_socket_t f
     return event_sptr;
 }
 
-bbt::errcode::ErrOpt IOThread::ConnectEventMapImpl::AddConnectEvent(std::shared_ptr<Event> event)
+ErrOpt IOThread::ConnectEventMapImpl::AddConnectEvent(std::shared_ptr<Event> event)
 {
     std::lock_guard<std::mutex> lock(m_connect_mutex);
     auto [it, succ] = m_connect_events.insert(std::make_pair(event->GetEventId(), event));
@@ -120,7 +119,7 @@ bbt::errcode::ErrOpt IOThread::ConnectEventMapImpl::AddConnectEvent(std::shared_
     return FASTERR_NOTHING;
 }
 
-bbt::errcode::ErrOpt IOThread::ConnectEventMapImpl::DelConnectEvent(EventId eventid)
+ErrOpt IOThread::ConnectEventMapImpl::DelConnectEvent(EventId eventid)
 {
     std::lock_guard<std::mutex> lock(m_connect_mutex);
     auto count = m_connect_events.erase(eventid);
@@ -130,22 +129,22 @@ bbt::errcode::ErrOpt IOThread::ConnectEventMapImpl::DelConnectEvent(EventId even
     return FASTERR_NOTHING;
 }
 
-bbt::errcode::ErrOpt IOThread::Listen(const char* ip, short port, const OnAcceptCallback& onaccept_cb, std::shared_ptr<libevent::IOThread> thread)
+ErrOpt IOThread::Listen(const char* ip, short port, const OnAcceptCallback& onaccept_cb, std::shared_ptr<libevent::IOThread> thread)
 {
-    auto listen_addr = bbt::net::IPAddress(ip, port);
+    auto listen_addr = IPAddress(ip, port);
 
     std::lock_guard<std::mutex> _(m_addr2event_mutex);
 
     auto listen_event_it = m_addr2event_map.find(listen_addr);
     if (listen_event_it != m_addr2event_map.end())
-        return std::make_optional<bbt::errcode::Errcode>("can`t repeat regist!", ERRTYPE_ERROR);
+        return std::make_optional<Errcode>("can`t repeat regist!", ERRTYPE_ERROR);
 
-    auto fd = bbt::net::Util::CreateListen(ip, port, true);
+    auto fd = Util::CreateListen(ip, port, true);
     if (fd < 0)
-        return std::make_optional<bbt::errcode::Errcode>("create listen socket failed! errno=" + std::to_string(errno) + ", errstr=" + std::string{strerror(errno), ERRTYPE_ERROR}, ERRTYPE_ERROR);
+        return std::make_optional<Errcode>("create listen socket failed! errno=" + std::to_string(errno) + ", errstr=" + std::string{strerror(errno), ERRTYPE_ERROR}, ERRTYPE_ERROR);
 
     if (onaccept_cb == nullptr)
-        return std::make_optional<bbt::errcode::Errcode>("on accept callback is null!", ERRTYPE_ERROR);
+        return std::make_optional<Errcode>("on accept callback is null!", ERRTYPE_ERROR);
 
     auto weak_this  = weak_from_this();
 
@@ -163,7 +162,7 @@ bbt::errcode::ErrOpt IOThread::Listen(const char* ip, short port, const OnAccept
 
     auto [it, isok] = m_addr2event_map.insert(std::make_pair(listen_addr, event));
     if (!isok)
-        return std::make_optional<errcode::Errcode>("IOThread::m_addr2event_map insert failed! ip:{" + listen_addr.GetIPPort() + '}', ERRTYPE_ERROR);
+        return std::make_optional<Errcode>("IOThread::m_addr2event_map insert failed! ip:{" + listen_addr.GetIPPort() + '}', ERRTYPE_ERROR);
     
     return FASTERR_NOTHING;
 }
@@ -184,7 +183,7 @@ void IOThread::OnAccept(int fd, short events, const OnAcceptCallback& onaccept, 
     }
 }
 
-bbt::errcode::ErrTuple<libevent::ConnectionSPtr>
+ErrTuple<libevent::ConnectionSPtr>
 IOThread::Accept(int listenfd, std::shared_ptr<libevent::IOThread> thread)
 {
     evutil_socket_t     fd;
@@ -193,7 +192,7 @@ IOThread::Accept(int listenfd, std::shared_ptr<libevent::IOThread> thread)
     fd = ::accept(listenfd, reinterpret_cast<sockaddr*>(&addr), &len);
 
 
-    bbt::net::IPAddress endpoint;
+    IPAddress endpoint;
     endpoint.set(addr);
 
     if(fd >= 0) {
@@ -214,9 +213,9 @@ IOThread::Accept(int listenfd, std::shared_ptr<libevent::IOThread> thread)
     return {FASTERR_NOTHING, nullptr};
 }
 
-bbt::errcode::ErrOpt IOThread::UnListen(const char* ip, short port)
+ErrOpt IOThread::UnListen(const char* ip, short port)
 {
-    auto address = bbt::net::IPAddress(ip, port);
+    auto address = IPAddress(ip, port);
 
     std::lock_guard<std::mutex> _(m_addr2event_mutex);
     auto it = m_addr2event_map.find(address);
@@ -231,17 +230,17 @@ bbt::errcode::ErrOpt IOThread::UnListen(const char* ip, short port)
     return FASTERR_NOTHING;
 }
 
-bbt::errcode::ErrOpt IOThread::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
+ErrOpt IOThread::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
 {
     if (timeout_ms <= 0)
         return FASTERR_ERROR("async connect, param timeout_ms can`t less then 0!");
 
-    int socket = bbt::net::Util::CreateConnect(ip, port, true);
+    int socket = Util::CreateConnect(ip, port, true);
     if (socket < 0)
         return FASTERR_ERROR("create socket failed!");
 
-    bbt::net::IPAddress addr{ip, port};
-    auto timeout_timestamp = bbt::timer::clock::nowAfter(bbt::timer::clock::ms(timeout_ms));
+    IPAddress addr{ip, port};
+    auto timeout_timestamp = bbt::core::clock::nowAfter(bbt::core::clock::ms(timeout_ms));
     auto event = RegisterEvent(socket, EventOpt::WRITEABLE | EventOpt::TIMEOUT | EventOpt::PERSIST,
     [=](std::shared_ptr<Event> event, short events){
         OnConnect(socket, event->GetEventId(), events, timeout_timestamp, addr, onconnect);
@@ -257,11 +256,11 @@ void IOThread::OnConnect(
     int sockfd,
     EventId eventid,
     short events,
-    bbt::timer::clock::Timestamp<bbt::timer::clock::ms> timeout,
-    const bbt::net::IPAddress& addr,
+    bbt::core::clock::Timestamp<bbt::core::clock::ms> timeout,
+    const IPAddress& addr,
     interface::OnConnectCallback onconnect)
 {
-    if (events & EventOpt::TIMEOUT ||  bbt::timer::clock::expired<bbt::timer::clock::ms>(timeout))
+    if (events & EventOpt::TIMEOUT ||  bbt::core::clock::expired<bbt::core::clock::ms>(timeout))
     {        
         onconnect(FASTERR("connect client timeout!", ErrType::ERRTYPE_CONNECT_TIMEOUT), nullptr);
         ::close(sockfd);
@@ -285,7 +284,7 @@ void IOThread::OnConnect(
     }
 }
 
-bbt::errcode::ErrOpt IOThread::Connect(evutil_socket_t fd, const bbt::net::IPAddress& addr)
+ErrOpt IOThread::Connect(evutil_socket_t fd, const IPAddress& addr)
 {
     if (0 > ::connect(fd, addr.getsockaddr(), addr.getsocklen())) {
         int err = evutil_socket_geterror(fd);

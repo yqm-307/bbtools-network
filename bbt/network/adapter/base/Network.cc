@@ -9,8 +9,7 @@
  * 
  */
 #include <bbt/network/adapter/base/Network.hpp>
-#include <bbt/base/assert/Assert.hpp>
-#include <bbt/base/uuid/EasyID.hpp>
+#include <bbt/core/macroutil/Assert.hpp>
 
 namespace bbt::network::base
 {
@@ -21,22 +20,22 @@ NetworkBase::NetworkBase()
 NetworkBase::~NetworkBase()
 {}
 
-bbt::errcode::ErrTuple<interface::INetConnectionSPtr> NetworkBase::Connect(const char* ip, short port)
+ErrTuple<interface::INetConnectionSPtr> NetworkBase::Connect(const char* ip, short port)
 {
     return {FASTERR_ERROR("empty implemention!"), nullptr};
 }
 
-bbt::errcode::ErrTuple<interface::INetConnectionSPtr> NetworkBase::Accept(int listen_fd)
+ErrTuple<interface::INetConnectionSPtr> NetworkBase::Accept(int listen_fd)
 {   
     return {FASTERR_ERROR("empty implemention!"), nullptr};
 }
 
-bbt::errcode::ErrOpt NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb)
+ErrOpt NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }
 
-bbt::errcode::ErrOpt NetworkBase::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
+ErrOpt NetworkBase::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }

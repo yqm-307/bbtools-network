@@ -1,9 +1,9 @@
 #pragma once
-#include "bbt/network/Define.hpp"
-#include <bbt/base/poolutil/IDPool.hpp>
-#include <bbt/base/assert/Assert.hpp>
+#include <bbt/network/Define.hpp>
+
 #include <functional>
 #include <thread>
+#include <atomic>
 #include <any>
 
 namespace bbt::network
@@ -60,7 +60,7 @@ public:
     virtual void            Start();
 
     /* （对外接口）需要子类实现: 调用此函数阻塞的等待 work 线程调用完毕 */
-    virtual bbt::errcode::ErrOpt Stop() = 0;
+    virtual ErrOpt          Stop() = 0;
 
     /* 工作函数 */
     virtual void            WorkHandle() = 0;
@@ -97,14 +97,13 @@ private:
     /* 核心函数，真正的work线程 */
     void Work();
     bool SyncWaitThreadExitEx(int wait_time);
+    static IOThreadID GenerateTid();
 private:
     HookCallback    m_thread_start_before_callback{nullptr};
     HookCallback    m_thread_stop_after_callback{nullptr};
     std::thread*    m_thread{nullptr};
     IOThreadID      m_tid{-1};
     volatile bool   m_running{false};
-    /* 其他 */
-    static bbt::pool_util::IDPool<int, true>    m_id_pool;
 };
 
 

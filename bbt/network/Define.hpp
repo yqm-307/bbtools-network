@@ -25,12 +25,16 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
-#include <bbt/base/assert/Assert.hpp>
-#include <bbt/base/Attribute.hpp>
+#include <bbt/core/macroutil/Assert.hpp>
+#include <bbt/core/Attribute.hpp>
+#include <bbt/core/net/IPAddress.hpp>
 #include <bbt/network/Errcode.hpp>
 
 namespace bbt::network
 {
+
+using namespace bbt::core::errcode;
+using namespace bbt::core::net;
 
 // 空闲断开连接时间
 #define CONNECTION_FREE_TIMEOUT_MS 5000
@@ -63,6 +67,6 @@ typedef uint64_t EventId;
 
 }
 
-#define FASTERR(info, type) std::make_optional<bbt::errcode::Errcode>(info, type)
+#define FASTERR(info, type) std::make_optional<Errcode>(info, type)
 #define FASTERR_ERROR(info) FASTERR(info, bbt::network::ErrType::ERRTYPE_ERROR)
 #define FASTERR_NOTHING std::nullopt

@@ -10,7 +10,7 @@ class LibeventConnection:
     public bbt::network::base::ConnectionBase
 {
 public:
-    LibeventConnection(std::shared_ptr<libevent::IOThread> bind_thread, int socket, const bbt::net::IPAddress& addr);
+    LibeventConnection(std::shared_ptr<libevent::IOThread> bind_thread, int socket, const IPAddress& addr);
 
     /**
      * @brief 获取当前连接所绑定的线程，失败返回nullptr

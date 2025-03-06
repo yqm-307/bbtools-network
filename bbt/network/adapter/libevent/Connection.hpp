@@ -9,8 +9,8 @@
  * 
  */
 #pragma once
-#include <bbt/base/buffer/Buffer.hpp>
-#include <bbt/base/thread/Lock.hpp>
+#include <bbt/core/buffer/Buffer.hpp>
+#include <bbt/core/thread/Lock.hpp>
 #include <bbt/network/Define.hpp>
 #include <bbt/network/adapter/libevent/LibeventConnection.hpp>
 #include <bbt/pollevent/EventLoop.hpp>
@@ -24,11 +24,11 @@ typedef std::shared_ptr<Connection> ConnectionSPtr;
 
 typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> 
                                                                             OnRecvCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/, bbt::errcode::ErrOpt /*err */, size_t /*send_len*/)>   
+typedef std::function<void(ConnectionSPtr /*conn*/, ErrOpt /*err */, size_t /*send_len*/)>   
                                                                             OnSendCallback;
-typedef std::function<void(void* /*userdata*/, const bbt::net::IPAddress& )>OnCloseCallback;
+typedef std::function<void(void* /*userdata*/, const IPAddress& )>OnCloseCallback;
 typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
-typedef std::function<void(void* /*userdata*/, const bbt::errcode::Errcode&)>             OnConnErrorCallback;
+typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnConnErrorCallback;
 
 struct ConnCallbacks
 {
@@ -50,7 +50,7 @@ public:
     Connection(
         std::shared_ptr<libevent::IOThread> thread,
         evutil_socket_t                     socket,
-        const bbt::net::IPAddress&          ipaddr
+        const IPAddress&          ipaddr
     );
     virtual ~Connection();
 
@@ -58,7 +58,7 @@ public:
     static std::shared_ptr<Connection> Create(
         std::shared_ptr<libevent::IOThread> thread,
         evutil_socket_t                     socket,
-        const bbt::net::IPAddress&          ipaddr
+        const IPAddress&          ipaddr
     );
     /* 设置Connection的回调行为 */
     void                    SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks);
@@ -79,15 +79,15 @@ protected:
     void                    OnEvent(evutil_socket_t sockfd, short events);
     void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
 
-    bbt::errcode::ErrOpt    Recv(evutil_socket_t sockfd);
+    ErrOpt    Recv(evutil_socket_t sockfd);
     size_t                  Send(const char* buf, size_t len);
-    bbt::errcode::ErrOpt    Timeout();
+    ErrOpt    Timeout();
 
     virtual void            OnRecv(const char* data, size_t len) override;
-    virtual void            OnSend(bbt::errcode::ErrOpt err, size_t succ_len) override;
+    virtual void            OnSend(ErrOpt err, size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
-    virtual void            OnError(const bbt::errcode::Errcode& err) override;
+    virtual void            OnError(const Errcode& err) override;
 
     int                     RegistASendEvent();
     int                     AppendOutputBuffer(const char* data, size_t len);
@@ -106,7 +106,7 @@ private:
      */
     bbt::core::Buffer     m_output_buffer;
     std::atomic_bool        m_output_buffer_is_free{true}; // 是否被发送事件占用
-    bbt::thread::Mutex
+    bbt::core::thread::Mutex
                             m_output_mutex;
 
     int                     m_timeout_ms{CONNECTION_FREE_TIMEOUT_MS};           // 连接空闲超时事件

@@ -1,5 +1,5 @@
 #include <bbt/network/adapter/libevent/Network.hpp>
-#include <bbt/base/Logger/Logger.hpp>
+#include <bbt/core/Logger/Logger.hpp>
 
 using namespace bbt::network;
 using namespace bbt::network::libevent;
@@ -9,12 +9,12 @@ void InitCallbacks()
 {
 
     callbacks.on_close_callback = 
-    [](void* udata, const bbt::net::IPAddress& addr) {
+    [](void* udata, const IPAddress& addr) {
         BBT_BASE_LOG_INFO("%s", addr.GetIPPort().c_str());
     };
 
     callbacks.on_err_callback =
-    [](void* udata, const bbt::errcode::Errcode& err){
+    [](void* udata, const Errcode& err){
         BBT_BASE_LOG_ERROR("errno=%s", err.CWhat());
     };
 
@@ -24,7 +24,7 @@ void InitCallbacks()
     };
 
     callbacks.on_send_callback =
-    [](libevent::ConnectionSPtr conn, bbt::errcode::ErrOpt err, size_t send_len){
+    [](libevent::ConnectionSPtr conn, ErrOpt err, size_t send_len){
         BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
     };
 
@@ -37,8 +37,6 @@ void InitCallbacks()
 
 int main(int args, char* argv[])
 {
-    int console_debug_flag = 1;
-    BBT_CONFIG_QUICK_SET_DYNAMIC_ENTRY(int, &console_debug_flag, bbt::config::BBT_LOG_STDOUT_OPEN);
     if (args != 3) {
         printf("[usage] ./{exec_name} {ip} {port}\n");
         exit(-1);
@@ -51,7 +49,7 @@ int main(int args, char* argv[])
     network.AutoInitThread(1);
     network.Start();
     ConnectionSPtr connection = nullptr;
-    bbt::thread::CountDownLatch count_down_latch{1};
+    bbt::core::thread::CountDownLatch count_down_latch{1};
     const char* data = "hello world";
     InitCallbacks();
 
@@ -79,8 +77,8 @@ int main(int args, char* argv[])
     if (connection == nullptr)
         return -1;
 
-    auto end_time = bbt::timer::clock::nowAfter(bbt::timer::clock::seconds(3));
-    while (!bbt::timer::clock::expired<bbt::timer::clock::ms>(end_time)) {
+    auto end_time = bbt::core::clock::nowAfter(bbt::core::clock::seconds(3));
+    while (!bbt::core::clock::expired<bbt::core::clock::ms>(end_time)) {
         Assert(connection->AsyncSend(data, strlen(data)) >= 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }

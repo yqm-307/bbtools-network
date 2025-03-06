@@ -8,15 +8,15 @@
  * @copyright Copyright (c) 2024
  * 
  */
-#include <bbt/base/net/SocketUtil.hpp>
+#include <bbt/core/net/SocketUtil.hpp>
 #include <bbt/network/adapter/libevent/Network.hpp>
-#include <bbt/base/random/Random.hpp>
+#include <bbt/core/crypto/Random.hpp>
 #include <event2/util.h>
 
 namespace bbt::network::libevent
 {
 
-void WaitForCountDown(bbt::thread::CountDownLatch* latch)
+void WaitForCountDown(bbt::core::thread::CountDownLatch* latch)
 {
     latch->Down();
     latch->Wait();
@@ -44,7 +44,7 @@ void Network::Start()
         return;
 
     m_status = NetworkStatus::emNETWORK_STARTING;
-    m_count_down_latch = new bbt::thread::CountDownLatch(m_thread_map.size());
+    m_count_down_latch = new bbt::core::thread::CountDownLatch(m_thread_map.size());
 
     // 启动子线程
     for (auto&& itor : m_thread_map) {
@@ -76,7 +76,7 @@ void Network::Stop()
     m_status = NetworkStatus::emNETWORK_STOP;
 }
 
-errcode::ErrOpt Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread)
+ErrOpt Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread)
 {
 
     if (thread == nullptr)
@@ -107,7 +107,7 @@ errcode::ErrOpt Network::AddIOThread(IOThreadType type, std::shared_ptr<libevent
     return FASTERR_NOTHING;
 }
 
-errcode::ErrOpt Network::AutoInitThread(int sub_thread_num)
+ErrOpt Network::AutoInitThread(int sub_thread_num)
 {
     if (m_thread_map.size() != 0)
         return FASTERR_ERROR("thread is exist! please clear network thread!"); // 已经通过其他方式初始化过线程了
@@ -146,7 +146,7 @@ void Network::StopSubThread()
     m_status = NetworkStatus::emNETWORK_STOP;
 }
 
-errcode::ErrOpt Network::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
+ErrOpt Network::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
     if (listen_and_connect_thread == nullptr)
@@ -175,9 +175,9 @@ Network::ThreadSPtr Network::GetListenAndConnectThread()
 }
 
 
-std::pair<Network::ThreadSPtr, errcode::ErrOpt> Network::GetThread(IOThreadType type)
+std::pair<Network::ThreadSPtr, ErrOpt> Network::GetThread(IOThreadType type)
 {
-    static bbt::random::mt_random<> rd;
+    static bbt::core::crypto::mt_random<> rd;
     if (type < 0) {
         return {nullptr, FASTERR_ERROR("bad thread type!")};
     }
@@ -206,7 +206,7 @@ std::pair<Network::ThreadSPtr, errcode::ErrOpt> Network::GetThread(IOThreadType 
 }
 
 
-errcode::ErrOpt Network::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
+ErrOpt Network::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
 

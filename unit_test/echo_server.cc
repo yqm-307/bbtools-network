@@ -1,5 +1,5 @@
 #include <bbt/network/adapter/libevent/Network.hpp>
-#include <bbt/base/Logger/Logger.hpp>
+#include <bbt/core/Logger/Logger.hpp>
 
 using namespace bbt::network;
 using namespace bbt::network::libevent;
@@ -19,14 +19,14 @@ public:
         });
 
         m_callback.on_close_callback = 
-        [this](void* udata, const bbt::net::IPAddress& addr) {
+        [this](void* udata, const IPAddress& addr) {
             UData* data = reinterpret_cast<UData*>(udata);
             BBT_BASE_LOG_INFO("onclose [%d], %s", data->connid, addr.GetIPPort().c_str());
             m_conn_map.erase(data->connid);
         };
 
         m_callback.on_err_callback =
-        [](void* udata, const bbt::errcode::Errcode& err){
+        [](void* udata, const Errcode& err){
             UData* data = reinterpret_cast<UData*>(udata);
             BBT_BASE_LOG_ERROR("[%d], %s", data->connid, err.CWhat());
         };
@@ -38,7 +38,7 @@ public:
         };
 
         m_callback.on_send_callback =
-        [](libevent::ConnectionSPtr conn, bbt::errcode::ErrOpt err, size_t send_len){
+        [](libevent::ConnectionSPtr conn, ErrOpt err, size_t send_len){
             BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
         };
 
@@ -83,8 +83,6 @@ private:
 
 int main(int args, char* argv[])
 {
-    int console_debug_flag = 1;
-    BBT_CONFIG_QUICK_SET_DYNAMIC_ENTRY(int, &console_debug_flag, bbt::config::BBT_LOG_STDOUT_OPEN);
     if (args != 3) {
         printf("[usage] ./{exec_name} {thread_num} {port}\n");
         exit(-1);

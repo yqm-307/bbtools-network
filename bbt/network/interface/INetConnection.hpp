@@ -11,7 +11,7 @@
 #pragma once
 #include <memory>
 #include <bbt/network/interface/ICallback.hpp>
-#include <bbt/base/net/IPAddress.hpp>
+#include <bbt/core/net/IPAddress.hpp>
 
 namespace bbt::network::interface
 {
@@ -20,8 +20,8 @@ class INetConnection;
 
 typedef std::shared_ptr<INetConnection> INetConnectionSPtr;
 typedef std::unique_ptr<INetConnection> INetConnectionUQPtr;
-typedef std::function<void(bbt::errcode::ErrOpt, INetConnectionSPtr)> OnConnectCallback;
-typedef std::function<void(bbt::errcode::ErrOpt, INetConnectionSPtr)> OnAcceptCallback;
+typedef std::function<void(ErrOpt, INetConnectionSPtr)> OnConnectCallback;
+typedef std::function<void(ErrOpt, INetConnectionSPtr)> OnAcceptCallback;
 
 
 class INetConnection:
@@ -31,9 +31,9 @@ public:
     /**
      * @brief 获取连接对端的ip地址
      * 
-     * @return const bbt::net::IPAddress& 
+     * @return const IPAddress& 
      */
-    virtual const bbt::net::IPAddress& GetPeerAddress() const = 0;
+    virtual const IPAddress& GetPeerAddress() const = 0;
 
     /**
      * @brief 获取当前连接对象的连接id

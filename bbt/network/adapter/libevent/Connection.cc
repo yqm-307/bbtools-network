@@ -9,10 +9,9 @@
  * 
  */
 #include <string>
-#include <bbt/base/buffer/Buffer.hpp>
-#include <bbt/base/Logger/Logger.hpp>
-#include <bbt/base/timer/Clock.hpp>
-#include <bbt/base/thread/Lock.hpp>
+#include <bbt/core/Logger/Logger.hpp>
+#include <bbt/core/clock/Clock.hpp>
+#include <bbt/core/thread/Lock.hpp>
 #include <bbt/pollevent/Event.hpp>
 #include <bbt/network/adapter/libevent/Connection.hpp>
 #include <bbt/network/adapter/libevent/IOThread.hpp>
@@ -22,12 +21,12 @@ namespace bbt::network::libevent
 
 typedef bbt::pollevent::EventOpt EventOpt;
 
-std::shared_ptr<Connection> Connection::Create(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const bbt::net::IPAddress& ipaddr)
+std::shared_ptr<Connection> Connection::Create(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const IPAddress& ipaddr)
 {
     return std::make_shared<Connection>(thread, socket, ipaddr);
 }
 
-Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const bbt::net::IPAddress& ipaddr)
+Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const IPAddress& ipaddr)
     :LibeventConnection(thread, socket, ipaddr)
 {
 }
@@ -61,17 +60,17 @@ void Connection::GetUserData(void* userdata)
 void Connection::OnRecv(const char* data, size_t len)
 {
     if (!m_callbacks.on_recv_callback) {
-        OnError(bbt::errcode::Errcode{"on recv!, but no recv callback!", ERRTYPE_ERROR});
+        OnError(Errcode{"on recv!, but no recv callback!", ERRTYPE_ERROR});
         return;
     }
 
         m_callbacks.on_recv_callback(shared_from_this(), data, len);
 }
 
-void Connection::OnSend(bbt::errcode::ErrOpt err, size_t succ_len)
+void Connection::OnSend(ErrOpt err, size_t succ_len)
 {
     if (!m_callbacks.on_send_callback) {
-        OnError(bbt::errcode::Errcode{"on send!, but no send callback!", ERRTYPE_ERROR});
+        OnError(Errcode{"on send!, but no send callback!", ERRTYPE_ERROR});
         return;
     }
 
@@ -81,7 +80,7 @@ void Connection::OnSend(bbt::errcode::ErrOpt err, size_t succ_len)
 void Connection::OnClose()
 {
     if (!m_callbacks.on_close_callback) {
-        OnError(bbt::errcode::Errcode{"on closed!, but no close callback!", ERRTYPE_ERROR});
+        OnError(Errcode{"on closed!, but no close callback!", ERRTYPE_ERROR});
         return;
     }
 
@@ -91,13 +90,13 @@ void Connection::OnClose()
 void Connection::OnTimeout()
 {
     if (!m_callbacks.on_timeout_callback) {
-        OnError(bbt::errcode::Errcode{"on timeout!, but no timeout callback!", ERRTYPE_ERROR});
+        OnError(Errcode{"on timeout!, but no timeout callback!", ERRTYPE_ERROR});
         return;
     }
     m_callbacks.on_timeout_callback(shared_from_this());
 }
 
-void Connection::OnError(const bbt::errcode::Errcode& err)
+void Connection::OnError(const Errcode& err)
 {
     if (m_callbacks.on_err_callback) {
         m_callbacks.on_err_callback(m_userdata, err);
@@ -112,7 +111,7 @@ void Connection::Close()
     auto ret = m_event->CancelListen();
     if (m_send_event)
         m_send_event->CancelListen();
-    if (ret != 0) OnError(bbt::errcode::Errcode{"event cancel listen failed!", ERRTYPE_ERROR});
+    if (ret != 0) OnError(Errcode{"event cancel listen failed!", ERRTYPE_ERROR});
     
     CloseSocket();
     SetStatus(ConnStatus::emCONN_DECONNECTED);
@@ -161,14 +160,14 @@ void Connection::OnEvent(evutil_socket_t sockfd, short event)
     }
 }
 
-bbt::errcode::ErrOpt Connection::Recv(evutil_socket_t sockfd)
+ErrOpt Connection::Recv(evutil_socket_t sockfd)
 {
     int                 err          = 0;
     int                 read_len     = 0;
     bbt::core::Buffer   buffer;
     char*               buffer_begin = nullptr;
     size_t              buffer_len   = 4096;
-    bbt::errcode::ErrOpt errcode = std::nullopt;
+    ErrOpt errcode = std::nullopt;
 
     if (IsClosed()) {
         return FASTERR_ERROR("conn is closed, but event was not cancel! peer:" + GetPeerAddress().GetIPPort());
@@ -180,17 +179,17 @@ bbt::errcode::ErrOpt Connection::Recv(evutil_socket_t sockfd)
 
     if (read_len == -1) {
         if (errno == EINTR || errno == EAGAIN) {
-            errcode = std::make_optional<bbt::errcode::Errcode>("please try again!", ERRTYPE_NETWORK_RECV_TRY_AGAIN);
+            errcode = std::make_optional<Errcode>("please try again!", ERRTYPE_NETWORK_RECV_TRY_AGAIN);
         } else if (errno == ECONNREFUSED) {
-            errcode = std::make_optional<bbt::errcode::Errcode>("connect refused!", ERRTYPE_NETWORK_RECV_CONNREFUSED);
+            errcode = std::make_optional<Errcode>("connect refused!", ERRTYPE_NETWORK_RECV_CONNREFUSED);
         } else {
-            errcode = std::make_optional<bbt::errcode::Errcode>("other errno! errno=" + std::to_string(errno), ERRTYPE_NETWORK_RECV_OTHER_ERR);
+            errcode = std::make_optional<Errcode>("other errno! errno=" + std::to_string(errno), ERRTYPE_NETWORK_RECV_OTHER_ERR);
         }
 
     } else if (read_len == 0) {
-        errcode = std::make_optional<bbt::errcode::Errcode>("peer connect closed!", ERRTYPE_NETWORK_RECV_EOF);
+        errcode = std::make_optional<Errcode>("peer connect closed!", ERRTYPE_NETWORK_RECV_EOF);
     } else if (read_len < -1) {
-        errcode = std::make_optional<bbt::errcode::Errcode>("other error! please debug!", ERRTYPE_NETWORK_RECV_OTHER_ERR);
+        errcode = std::make_optional<Errcode>("other error! please debug!", ERRTYPE_NETWORK_RECV_OTHER_ERR);
     }
 
     if (errcode.has_value())
@@ -230,8 +229,8 @@ int Connection::AsyncSend(const char* buf, size_t len)
      *  待发送数据，如果有，则继续上述循环直到buffer为空.
      */
     if (!IsConnected()) {
-        std::string info = bbt::log::format("send error! connection is disconnect! sockfd=%d, status=%d", GetSocket(), IsConnected() ? 1 : 0);
-        OnError(bbt::errcode::Errcode{info, ERRTYPE_ERROR});
+        std::string info = bbt::core::log::format("send error! connection is disconnect! sockfd=%d, status=%d", GetSocket(), IsConnected() ? 1 : 0);
+        OnError(Errcode{info, ERRTYPE_ERROR});
         return -1;
     }
 
@@ -251,7 +250,7 @@ int Connection::AsyncSend(const char* buf, size_t len)
 
 int Connection::AppendOutputBuffer(const char* data, size_t len)
 {
-    bbt::thread::lock_guard lock(m_output_mutex);
+    bbt::core::thread::lock_guard lock(m_output_mutex);
     auto before_size = m_output_buffer.Size();
     m_output_buffer.WriteString(data, len);
     auto after_size = m_output_buffer.Size();
@@ -275,7 +274,7 @@ int Connection::RegistASendEvent()
     auto buffer_sptr = std::make_shared<bbt::core::Buffer>();
     /* Swap 是无额外开销的 */
     {
-        bbt::thread::lock_guard lock(m_output_mutex);
+        bbt::core::thread::lock_guard lock(m_output_mutex);
         buffer_sptr->Swap(m_output_buffer);
     }
 
@@ -300,12 +299,12 @@ int Connection::RegistASendEvent()
 
 void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events)
 {
-    bbt::errcode::ErrOpt err = std::nullopt;
+    ErrOpt err = std::nullopt;
     int size = 0;
 
     if (IsClosed()) return;
     if (events & EventOpt::TIMEOUT) {
-        err = std::make_optional<bbt::errcode::Errcode>("send timeout!", ERRTYPE_SEND_TIMEOUT);
+        err = std::make_optional<Errcode>("send timeout!", ERRTYPE_SEND_TIMEOUT);
     } else if (events & EventOpt::WRITEABLE) {
         size = Send(output_buffer->Peek(), output_buffer->Size());
     }
@@ -319,7 +318,7 @@ void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, s
         m_send_event = nullptr;
         m_output_buffer_is_free.exchange(true); // 允许注册发送事件
     } else {
-        bbt::thread::lock_guard lock(m_output_mutex);
+        bbt::core::thread::lock_guard lock(m_output_mutex);
         Assert(output_buffer->Size() >= 0);
         output_buffer->Swap(m_output_buffer);
         m_output_buffer.Clear();
@@ -327,7 +326,7 @@ void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, s
 }
 
 
-bbt::errcode::ErrOpt Connection::Timeout()
+ErrOpt Connection::Timeout()
 {
     OnTimeout();
     Close();

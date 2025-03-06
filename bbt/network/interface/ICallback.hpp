@@ -48,7 +48,7 @@ public:
      */
     virtual void Close() = 0;
 
-    virtual void OnError(const bbt::errcode::Errcode& error) = 0;
+    virtual void OnError(const Errcode& error) = 0;
 };
 
 
@@ -86,7 +86,7 @@ public:
      * 
      * @param succ_len 成功发送的字节数 
      */
-    virtual void OnSend(bbt::errcode::ErrOpt err, size_t succ_len) = 0;
+    virtual void OnSend(ErrOpt err, size_t succ_len) = 0;
 
     /**
      * @brief 连接关闭事件

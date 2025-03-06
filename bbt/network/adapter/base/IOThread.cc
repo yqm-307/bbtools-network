@@ -15,7 +15,12 @@ namespace bbt::network::base
 
 static const int io_thread_limit_num = 16;
 
-bbt::pool_util::IDPool<int, true> IOThread::m_id_pool = bbt::pool_util::IDPool<int, true>(io_thread_limit_num);  // todo: thread limit config
+IOThreadID IOThread::GenerateTid()
+{
+    static std::atomic_int _id = 0;
+    return ++_id;
+}
+
 
 IOThread::IOThread()
 {
@@ -29,17 +34,12 @@ IOThread::~IOThread()
 
 void IOThread::Init()
 {
-    auto [isok, id] = m_id_pool.GetID();
-    AssertWithInfo(isok, "maybe thread num range out of thread limit!");
-    m_tid = id;
+    m_tid = GenerateTid();
 }
 
 void IOThread::Destory()
 {
-    auto isok = m_id_pool.ReleaseID(m_tid);
-    AssertWithInfo(isok, "this is a fatal bug! maybe is a bug with id pool!");
     m_tid = -1;
-
     m_thread_start_before_callback = nullptr;
     m_thread_stop_after_callback = nullptr;
     delete m_thread;

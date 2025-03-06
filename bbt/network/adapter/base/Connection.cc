@@ -20,7 +20,7 @@ ConnId ConnectionBase::GenerateConnId()
     return ++_id;
 }
 
-ConnectionBase::ConnectionBase(int socket, const bbt::net::IPAddress& addr)
+ConnectionBase::ConnectionBase(int socket, const IPAddress& addr)
     :m_socket_fd(socket),
     m_peer_addr(addr),
     m_conn_id(GenerateConnId())
@@ -50,7 +50,7 @@ bool ConnectionBase::IsClosed() const
     return (m_conn_status == ConnStatus::emCONN_DECONNECTED);
 }
 
-const bbt::net::IPAddress& ConnectionBase::GetPeerAddress() const
+const IPAddress& ConnectionBase::GetPeerAddress() const
 {
     return m_peer_addr;
 }
@@ -77,22 +77,22 @@ void ConnectionBase::SetStatus(ConnStatus status)
 
 void ConnectionBase::OnRecv(const char* data, size_t len)
 {
-    OnError(bbt::errcode::Errcode{"ConnectionBase::OnRecv() emply implementation!", bbt::network::ERRTYPE_ERROR});
+    OnError(Errcode{"ConnectionBase::OnRecv() emply implementation!", ERRTYPE_ERROR});
 }
 
-void ConnectionBase::OnSend(bbt::errcode::ErrOpt err, size_t succ_len)
+void ConnectionBase::OnSend(ErrOpt err, size_t succ_len)
 {
-    OnError(bbt::errcode::Errcode{"ConnectionBase::OnSend() emply implementation!", bbt::network::ERRTYPE_ERROR});
+    OnError(Errcode{"ConnectionBase::OnSend() emply implementation!", ERRTYPE_ERROR});
 }
 
 void ConnectionBase::OnClose()
 {
-    OnError(bbt::errcode::Errcode{"ConnectionBase::OnClose() emply implementation!", bbt::network::ERRTYPE_ERROR});
+    OnError(Errcode{"ConnectionBase::OnClose() emply implementation!", ERRTYPE_ERROR});
 }
 
 void ConnectionBase::OnTimeout()
 {
-    OnError(bbt::errcode::Errcode{"ConnectionBase::OnTimeout() emply implementation!", bbt::network::ERRTYPE_ERROR});
+    OnError(Errcode{"ConnectionBase::OnTimeout() emply implementation!", ERRTYPE_ERROR});
 }
 
 evutil_socket_t ConnectionBase::GetSocket() const

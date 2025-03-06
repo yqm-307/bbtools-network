@@ -9,10 +9,8 @@
  * 
  */
 #pragma once
-#include <bbt/base/templateutil/managerconn/ManagerBase.hpp>
-
+#include <bbt/core/templateutil/managerconn/ManagerBase.hpp>
 #include <bbt/network/interface/INetConnection.hpp>
-#include <bbt/base/net/IPAddress.hpp>
 
 namespace bbt::network::libevent
 {
@@ -39,17 +37,17 @@ class ConnectionBase:
     friend class libevent::Network;
 public:
 
-    ConnectionBase(int socket, const bbt::net::IPAddress& addr);
+    ConnectionBase(int socket, const IPAddress& addr);
     ~ConnectionBase();
 
     virtual bool            IsConnected() const override final;
     virtual bool            IsClosed() const override final;
     virtual void            Close() override;
     virtual void            OnRecv(const char* data, size_t len) override;
-    virtual void            OnSend(bbt::errcode::ErrOpt err, size_t succ_len) override;
+    virtual void            OnSend(ErrOpt err, size_t succ_len) override;
     virtual void            OnClose() override;
     virtual void            OnTimeout() override;
-    virtual const bbt::net::IPAddress& GetPeerAddress() const override final;
+    virtual const IPAddress& GetPeerAddress() const override final;
     virtual evutil_socket_t GetSocket() const final;
     virtual ConnId          GetConnId() const override final;
 protected:
@@ -58,7 +56,7 @@ protected:
     static ConnId           GenerateConnId();
 private:
     int                     m_socket_fd{-1};
-    bbt::net::IPAddress     m_peer_addr;
+    IPAddress               m_peer_addr;
     volatile ConnStatus     m_conn_status{ConnStatus::emCONN_DEFAULT};
     const ConnId            m_conn_id{0};
 };

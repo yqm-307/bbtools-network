@@ -12,7 +12,6 @@
 #include <bbt/network/adapter/libevent/Connection.hpp>
 #include <bbt/network/adapter/libevent/IOThread.hpp>
 #include <bbt/network/adapter/base/Network.hpp>
-#include <bbt/base/net/IPAddress.hpp>
 
 namespace bbt::network::libevent
 {
@@ -25,8 +24,8 @@ enum IOThreadType : int
     CUSTOM                  = 10,   // 从此开始都是自定义
 };
 
-typedef std::function<void(errcode::ErrOpt, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
-typedef std::function<void(errcode::ErrOpt)>                                             OnNetworkErrorCallback;
+typedef std::function<void(ErrOpt, libevent::ConnectionSPtr /* new_conn */)>    OnAcceptCallback;
+typedef std::function<void(ErrOpt)>                                             OnNetworkErrorCallback;
 
 class Network final:
     public bbt::network::base::NetworkBase
@@ -39,10 +38,10 @@ public:
     Network();
     virtual ~Network();
 
-    virtual errcode::ErrOpt         AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
+    virtual ErrOpt                  AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
 
     /* 初始化并设置监听事件 */
-    virtual errcode::ErrOpt         StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
+    virtual ErrOpt                  StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
 
     /* 启动Network */
     void                            Start() override;
@@ -64,7 +63,7 @@ public:
      * @param thread 
      * @return errcode::ErrOpt 
      */
-    errcode::ErrOpt                 AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread);
+    ErrOpt                          AddIOThread(IOThreadType type, std::shared_ptr<libevent::IOThread> thread);
 
     /**
      * @brief 自动创建主线程和sub_thread_num数量的IO线程
@@ -72,11 +71,11 @@ public:
      * @param sub_thread_num 
      * @return errcode::ErrOpt 
      */
-    errcode::ErrOpt                 AutoInitThread(int sub_thread_num);
+    ErrOpt                          AutoInitThread(int sub_thread_num);
 
     ThreadSPtr                      GetAIOThread();
 protected:
-    std::pair<ThreadSPtr, errcode::ErrOpt> GetThread(IOThreadType type);
+    std::pair<ThreadSPtr, ErrOpt>   GetThread(IOThreadType type);
     ThreadSPtr                      GetListenAndConnectThread();
 
     void                            StopMainThread();
@@ -86,7 +85,7 @@ private:
                                     m_thread_map;
 
     NetworkStatus                   m_status{NetworkStatus::emNETWORK_DEFAULT};
-    bbt::thread::CountDownLatch*
+    bbt::core::thread::CountDownLatch*
                                     m_count_down_latch{nullptr};// 闭锁
 };
 
