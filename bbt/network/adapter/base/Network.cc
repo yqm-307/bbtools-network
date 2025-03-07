@@ -9,7 +9,7 @@
  * 
  */
 #include <bbt/network/adapter/base/Network.hpp>
-#include <bbt/core/macroutil/Assert.hpp>
+#include <bbt/core/util/Assert.hpp>
 
 namespace bbt::network::base
 {

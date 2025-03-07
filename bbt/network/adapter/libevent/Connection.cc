@@ -9,7 +9,7 @@
  * 
  */
 #include <string>
-#include <bbt/core/Logger/Logger.hpp>
+#include <bbt/core/log/Logger.hpp>
 #include <bbt/core/clock/Clock.hpp>
 #include <bbt/core/thread/Lock.hpp>
 #include <bbt/pollevent/Event.hpp>
@@ -250,7 +250,7 @@ int Connection::AsyncSend(const char* buf, size_t len)
 
 int Connection::AppendOutputBuffer(const char* data, size_t len)
 {
-    bbt::core::thread::lock_guard lock(m_output_mutex);
+    std::lock_guard<bbt::core::thread::Mutex> lock(m_output_mutex);
     auto before_size = m_output_buffer.Size();
     m_output_buffer.WriteString(data, len);
     auto after_size = m_output_buffer.Size();
@@ -274,7 +274,7 @@ int Connection::RegistASendEvent()
     auto buffer_sptr = std::make_shared<bbt::core::Buffer>();
     /* Swap 是无额外开销的 */
     {
-        bbt::core::thread::lock_guard lock(m_output_mutex);
+        std::lock_guard<bbt::core::thread::Mutex> lock(m_output_mutex);
         buffer_sptr->Swap(m_output_buffer);
     }
 
@@ -318,7 +318,7 @@ void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, s
         m_send_event = nullptr;
         m_output_buffer_is_free.exchange(true); // 允许注册发送事件
     } else {
-        bbt::core::thread::lock_guard lock(m_output_mutex);
+        std::lock_guard<bbt::core::thread::Mutex> lock(m_output_mutex);
         Assert(output_buffer->Size() >= 0);
         output_buffer->Swap(m_output_buffer);
         m_output_buffer.Clear();

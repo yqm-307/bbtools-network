@@ -1,5 +1,5 @@
 #include <bbt/network/adapter/libevent/Network.hpp>
-#include <bbt/core/Logger/Logger.hpp>
+#include <bbt/core/log/Logger.hpp>
 
 typedef bbt::network::libevent::Network Network;
 typedef bbt::network::libevent::ConnectionSPtr ConnectionSPtr;

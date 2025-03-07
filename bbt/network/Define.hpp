@@ -25,7 +25,7 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
-#include <bbt/core/macroutil/Assert.hpp>
+#include <bbt/core/util/Assert.hpp>
 #include <bbt/core/Attribute.hpp>
 #include <bbt/core/net/IPAddress.hpp>
 #include <bbt/network/Errcode.hpp>

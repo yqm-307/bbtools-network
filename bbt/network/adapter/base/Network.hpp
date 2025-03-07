@@ -9,7 +9,7 @@
  * 
  */
 #pragma once
-#include <bbt/core/templateutil/managerconn/ManagerBase.hpp>
+#include <bbt/core/util/ManagerBase.hpp>
 
 #include <bbt/network/Define.hpp>
 #include <bbt/network/interface/INetwork.hpp>
