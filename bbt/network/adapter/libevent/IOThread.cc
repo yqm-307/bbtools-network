@@ -246,7 +246,7 @@ ErrOpt IOThread::AsyncConnect(const char* ip, short port, int timeout_ms, const 
         OnConnect(socket, event->GetEventId(), events, timeout_timestamp, addr, onconnect);
     });
 
-    event->StartListen(CONNECT_TIMEOUT_MS);
+    event->StartListen(timeout_ms);
     m_impl_connect_event_map.AddConnectEvent(event);
 
     return FASTERR_NOTHING;
