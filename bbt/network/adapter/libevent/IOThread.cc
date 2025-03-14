@@ -284,7 +284,7 @@ void IOThread::OnConnect(
         }
         else
         {
-            onconnect(FASTERR("connect failed! " + std::string(strerror(errno)), ErrType::ERRTYPE_CONNECT_CONNREFUSED), nullptr);
+            onconnect(err, nullptr);
             ::close(sockfd);
         }
 
