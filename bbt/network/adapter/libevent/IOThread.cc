@@ -260,6 +260,7 @@ void IOThread::OnConnect(
     const IPAddress& addr,
     interface::OnConnectCallback onconnect)
 {
+    // 超时了
     if (events & EventOpt::TIMEOUT ||  bbt::core::clock::expired<bbt::core::clock::ms>(timeout))
     {        
         onconnect(FASTERR("connect client timeout!", ErrType::ERRTYPE_CONNECT_TIMEOUT), nullptr);
@@ -267,7 +268,8 @@ void IOThread::OnConnect(
         m_impl_connect_event_map.DelConnectEvent(eventid);
         return;
     }
-        
+
+    // 可以接收连接了
     if (events & EventOpt::WRITEABLE) {
         auto err = Connect(sockfd, addr);
         if (err.has_value() && err.value().Type() == ErrType::ERRTYPE_CONNECT_TRY_AGAIN) {
@@ -279,8 +281,15 @@ void IOThread::OnConnect(
                 std::dynamic_pointer_cast<libevent::IOThread>(shared_from_this()), sockfd, addr);
             onconnect(FASTERR_NOTHING, conn_sptr);
             conn_sptr->RunInEventLoop();
-            m_impl_connect_event_map.DelConnectEvent(eventid);
         }
+        else
+        {
+            onconnect(FASTERR("connect failed! " + std::string(strerror(errno)), ErrType::ERRTYPE_CONNECT_CONNREFUSED), nullptr);
+            ::close(sockfd);
+        }
+
+        // 成功、失败都删除事件
+        m_impl_connect_event_map.DelConnectEvent(eventid);
     }
 }
 
