@@ -20,8 +20,8 @@ class INetConnection;
 
 typedef std::shared_ptr<INetConnection> INetConnectionSPtr;
 typedef std::unique_ptr<INetConnection> INetConnectionUQPtr;
-typedef std::function<void(ErrOpt, INetConnectionSPtr)> OnConnectCallback;
-typedef std::function<void(ErrOpt, INetConnectionSPtr)> OnAcceptCallback;
+typedef std::function<void(ErrOpt, INetConnectionSPtr)> IOnConnectCallback;
+typedef std::function<void(ErrOpt, INetConnectionSPtr)> IOnAcceptCallback;
 
 
 class INetConnection:

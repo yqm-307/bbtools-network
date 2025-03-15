@@ -146,7 +146,7 @@ void Network::StopSubThread()
     m_status = NetworkStatus::emNETWORK_STOP;
 }
 
-ErrOpt Network::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
+ErrOpt Network::StartListen(const char* ip, short port, const interface::IOnAcceptCallback& onaccept_cb)
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
     if (listen_and_connect_thread == nullptr)
@@ -206,7 +206,7 @@ std::pair<Network::ThreadSPtr, ErrOpt> Network::GetThread(IOThreadType type)
 }
 
 
-ErrOpt Network::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
+ErrOpt Network::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::IOnConnectCallback& onconnect)
 {
     auto listen_and_connect_thread = GetListenAndConnectThread();
 

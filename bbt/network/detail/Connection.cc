@@ -13,21 +13,22 @@
 #include <bbt/core/clock/Clock.hpp>
 #include <bbt/core/thread/Lock.hpp>
 #include <bbt/pollevent/Event.hpp>
-#include <bbt/network/adapter/libevent/Connection.hpp>
-#include <bbt/network/adapter/libevent/IOThread.hpp>
+#include <bbt/network/detail/Connection.hpp>
 
-namespace bbt::network::libevent
+namespace bbt::network::detail
 {
 
 typedef bbt::pollevent::EventOpt EventOpt;
 
-std::shared_ptr<Connection> Connection::Create(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const IPAddress& ipaddr)
+std::shared_ptr<Connection> Connection::Create(std::weak_ptr<EvThread> thread, evutil_socket_t socket, const IPAddress& ipaddr)
 {
     return std::make_shared<Connection>(thread, socket, ipaddr);
 }
 
-Connection::Connection(std::shared_ptr<libevent::IOThread> thread, evutil_socket_t socket, const IPAddress& ipaddr)
-    :LibeventConnection(thread, socket, ipaddr)
+Connection::Connection(std::weak_ptr<EvThread> thread, evutil_socket_t socket, const IPAddress& ipaddr):
+    m_bind_thread(thread),
+    m_socket_fd(socket),
+    m_peer_addr(ipaddr)
 {
 }
 
@@ -42,7 +43,7 @@ void Connection::SetOpt_CloseTimeoutMS(int timeout_ms)
     m_timeout_ms = timeout_ms;
 }
 
-void Connection::SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks)
+void Connection::SetOpt_Callbacks(const ConnCallbacks& callbacks)
 {
     m_callbacks = callbacks;
 }
@@ -116,6 +117,21 @@ void Connection::Close()
     CloseSocket();
     SetStatus(ConnStatus::emCONN_DECONNECTED);
     OnClose();
+}
+
+bool Connection::IsConnected() const
+{
+    return (m_conn_status == ConnStatus::emCONN_CONNECTED);
+}
+
+bool Connection::IsClosed() const
+{
+    return (m_conn_status == ConnStatus::emCONN_DECONNECTED);
+}
+
+const IPAddress& Connection::GetPeerAddress() const
+{
+    return m_peer_addr;
 }
 
 void Connection::RunInEventLoop()
@@ -332,5 +348,48 @@ ErrOpt Connection::Timeout()
     Close();
     return FASTERR_NOTHING;
 }
+
+std::shared_ptr<libevent::IOThread> Connection::GetBindThread()
+{
+    return m_bind_thread.lock();
+}
+
+bool Connection::BindThreadIsRunning()
+{
+    if (m_bind_thread.expired())
+        return false;
+    
+    auto thread = m_bind_thread.lock();
+    if (thread == nullptr)
+        return false;
+    
+    return thread->IsRunning();
+}
+
+void Connection::CloseSocket()
+{
+    if (m_socket_fd < 0)
+        return;
+
+    ::close(m_socket_fd);
+    m_socket_fd = -1;
+}
+
+void Connection::SetStatus(ConnStatus status)
+{
+    AssertWithInfo(status >= m_conn_status, "status can`t rollback!");  // 连接状态不允许回退
+    m_conn_status = status;
+}
+
+ConnId Connection::GetConnId() const
+{
+    return m_conn_id;
+}
+
+evutil_socket_t Connection::GetSocket() const
+{
+    return m_socket_fd;
+}
+
 
 } // namespace bbt::network::libevent

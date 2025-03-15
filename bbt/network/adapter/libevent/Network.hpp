@@ -38,10 +38,10 @@ public:
     Network();
     virtual ~Network();
 
-    virtual ErrOpt                  AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb) override;
+    virtual ErrOpt                  AsyncConnect(const char* ip, short port, int timeout_ms, const interface::IOnConnectCallback& onconnect_cb) override;
 
     /* 初始化并设置监听事件 */
-    virtual ErrOpt                  StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) override;
+    virtual ErrOpt                  StartListen(const char* ip, short port, const interface::IOnAcceptCallback& onaccept_cb) override;
 
     /* 启动Network */
     void                            Start() override;

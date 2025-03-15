@@ -12,56 +12,32 @@
 #include <bbt/core/buffer/Buffer.hpp>
 #include <bbt/core/thread/Lock.hpp>
 #include <bbt/network/Define.hpp>
-#include <bbt/network/adapter/libevent/LibeventConnection.hpp>
-#include <bbt/pollevent/EventLoop.hpp>
+#include <bbt/network/detail/EvThread.hpp>
 
-namespace bbt::network::libevent
+namespace bbt::network::detail
 {
-
-class Connection;
-typedef std::shared_ptr<Connection> ConnectionSPtr;
-
-
-typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> 
-                                                                            OnRecvCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/, ErrOpt /*err */, size_t /*send_len*/)>   
-                                                                            OnSendCallback;
-typedef std::function<void(void* /*userdata*/, const IPAddress& )>OnCloseCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
-typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnConnErrorCallback;
-
-struct ConnCallbacks
-{
-    OnRecvCallback      on_recv_callback{nullptr};
-    OnSendCallback      on_send_callback{nullptr};
-    OnCloseCallback     on_close_callback{nullptr};
-    OnTimeoutCallback   on_timeout_callback{nullptr};
-    OnConnErrorCallback     on_err_callback{nullptr};
-};
-
 
 class Connection:
-    public libevent::LibeventConnection,
     public std::enable_shared_from_this<Connection>
 {
-    friend class libevent::IOThread;
+    friend class EvThread;
     typedef bbt::pollevent::Event Event;
 public:
     Connection(
-        std::shared_ptr<libevent::IOThread> thread,
-        evutil_socket_t                     socket,
+        std::weak_ptr<EvThread> thread,
+        evutil_socket_t           socket,
         const IPAddress&          ipaddr
     );
     virtual ~Connection();
 
 
     static std::shared_ptr<Connection> Create(
-        std::shared_ptr<libevent::IOThread> thread,
-        evutil_socket_t                     socket,
+        std::weak_ptr<EvThread> thread,
+        evutil_socket_t           socket,
         const IPAddress&          ipaddr
     );
     /* 设置Connection的回调行为 */
-    void                    SetOpt_Callbacks(const libevent::ConnCallbacks& callbacks);
+    void                    SetOpt_Callbacks(const ConnCallbacks& callbacks);
     /* 设置空闲超时关闭Connection的时间 */
     void                    SetOpt_CloseTimeoutMS(int timeout_ms);
     /* 设置用户数据 */
@@ -71,7 +47,12 @@ public:
     /* 异步发送数据给对端 */
     int                     AsyncSend(const char* buf, size_t len);
     /* 关闭此连接 */
-    virtual void            Close() override;
+    void                    Close();
+    bool                    IsConnected() const;
+    bool                    IsClosed() const;
+    const IPAddress&        GetPeerAddress() const;
+    evutil_socket_t         GetSocket() const;
+    ConnId                  GetConnId() const;
 
 protected:
     /* 启动Connection */
@@ -79,19 +60,27 @@ protected:
     void                    OnEvent(evutil_socket_t sockfd, short events);
     void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
 
-    ErrOpt    Recv(evutil_socket_t sockfd);
+    ErrOpt                  Recv(evutil_socket_t sockfd);
     size_t                  Send(const char* buf, size_t len);
-    ErrOpt    Timeout();
+    ErrOpt                  Timeout();
 
-    virtual void            OnRecv(const char* data, size_t len) override;
-    virtual void            OnSend(ErrOpt err, size_t succ_len) override;
-    virtual void            OnClose() override;
-    virtual void            OnTimeout() override;
-    virtual void            OnError(const Errcode& err) override;
+    void                    OnRecv(const char* data, size_t len);
+    void                    OnSend(ErrOpt err, size_t succ_len);
+    void                    OnClose();
+    void                    OnTimeout();
+    void                    OnError(const Errcode& err);
 
     int                     RegistASendEvent();
     int                     AppendOutputBuffer(const char* data, size_t len);
+
+    std::shared_ptr<libevent::IOThread> GetBindThread();
+    bool                    BindThreadIsRunning();
+
+    virtual void            CloseSocket() final; 
+    virtual void            SetStatus(ConnStatus status) final;
 private:
+    std::weak_ptr<EvThread> m_bind_thread;
+
     ConnCallbacks           m_callbacks;                // 回调函数
     /**
      * 一连接一事件，
@@ -104,13 +93,18 @@ private:
     /**
      * 异步写需要做输出缓存，这里策略是无限扩张的输出缓存。
      */
-    bbt::core::Buffer     m_output_buffer;
+    bbt::core::Buffer       m_output_buffer;
     std::atomic_bool        m_output_buffer_is_free{true}; // 是否被发送事件占用
     bbt::core::thread::Mutex
                             m_output_mutex;
 
     int                     m_timeout_ms{CONNECTION_FREE_TIMEOUT_MS};           // 连接空闲超时事件
-    void*                   m_userdata{nullptr};    
+    void*                   m_userdata{nullptr};
+
+    int                     m_socket_fd{-1};
+    IPAddress               m_peer_addr;
+    volatile ConnStatus     m_conn_status{ConnStatus::emCONN_DEFAULT};
+    const ConnId            m_conn_id{0};
 };
 
 }

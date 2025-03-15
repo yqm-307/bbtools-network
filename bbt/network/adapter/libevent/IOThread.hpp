@@ -44,7 +44,7 @@ public:
     /* 新连接默认在本线程运行 */
     ErrOpt    Listen(const char* ip, short port, const OnAcceptCallback& onaccept_cb, std::shared_ptr<libevent::IOThread> thread = nullptr);
     ErrOpt    UnListen(const char* ip, short port);
-    ErrOpt    AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect);
+    ErrOpt    AsyncConnect(const char* ip, short port, int timeout_ms, const interface::IOnConnectCallback& onconnect);
     ///////////////////////
 
 
@@ -68,7 +68,7 @@ private:
                                 short events,
                                 core::clock::Timestamp<core::clock::ms> timeout,
                                 const IPAddress& addr,
-                                interface::OnConnectCallback onconnect);
+                                interface::IOnConnectCallback onconnect);
     ErrOpt                  Connect(evutil_socket_t fd, const IPAddress& addr);
 
     ErrTuple<libevent::ConnectionSPtr>

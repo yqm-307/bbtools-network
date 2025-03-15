@@ -230,7 +230,7 @@ ErrOpt IOThread::UnListen(const char* ip, short port)
     return FASTERR_NOTHING;
 }
 
-ErrOpt IOThread::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect)
+ErrOpt IOThread::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::IOnConnectCallback& onconnect)
 {
     if (timeout_ms <= 0)
         return FASTERR_ERROR("async connect, param timeout_ms can`t less then 0!");
@@ -258,7 +258,7 @@ void IOThread::OnConnect(
     short events,
     bbt::core::clock::Timestamp<bbt::core::clock::ms> timeout,
     const IPAddress& addr,
-    interface::OnConnectCallback onconnect)
+    interface::IOnConnectCallback onconnect)
 {
     // 超时了
     if (events & EventOpt::TIMEOUT ||  bbt::core::clock::expired<bbt::core::clock::ms>(timeout))

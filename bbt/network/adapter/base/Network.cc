@@ -30,12 +30,12 @@ ErrTuple<interface::INetConnectionSPtr> NetworkBase::Accept(int listen_fd)
     return {FASTERR_ERROR("empty implemention!"), nullptr};
 }
 
-ErrOpt NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::OnConnectCallback& onconnect_cb)
+ErrOpt NetworkBase::AsyncConnect(const char* ip, short port, int timeout_ms, const interface::IOnConnectCallback& onconnect_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }
 
-ErrOpt NetworkBase::StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb)
+ErrOpt NetworkBase::StartListen(const char* ip, short port, const interface::IOnAcceptCallback& onaccept_cb)
 {
     return FASTERR_ERROR("empty implemention!");
 }

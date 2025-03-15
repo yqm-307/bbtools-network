@@ -48,7 +48,7 @@ public:
      * @param onconnect_cb  连接结果回调
      * @return Errcode 
      */
-    virtual ErrOpt AsyncConnect(const char* ip, short port, int timeout_ms, const OnConnectCallback& onconnect_cb) = 0;
+    virtual ErrOpt AsyncConnect(const char* ip, short port, int timeout_ms, const IOnConnectCallback& onconnect_cb) = 0;
 
     /**
      * @brief 开启监听
@@ -58,7 +58,7 @@ public:
      * @param onaccept_cb   连接结果回调
      * @return Errcode 
      */
-    virtual ErrOpt StartListen(const char* ip, short port, const interface::OnAcceptCallback& onaccept_cb) = 0;
+    virtual ErrOpt StartListen(const char* ip, short port, const interface::IOnAcceptCallback& onaccept_cb) = 0;
 
 
     /**

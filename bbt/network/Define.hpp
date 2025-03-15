@@ -60,12 +60,38 @@ enum NetworkStatus
     emNETWORK_STOP        = 3,
 };
 
+class TcpServer;
+class TcpClient;
+
 // 连接id
 typedef uint64_t ConnId;
 // 事件id
 typedef uint64_t EventId;
 
-}
+
+namespace detail
+{
+class Connection;
+typedef std::shared_ptr<Connection> ConnectionSPtr;
+typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> 
+                                                                            OnRecvCallback;
+typedef std::function<void(ConnectionSPtr /*conn*/, ErrOpt /*err */, size_t /*send_len*/)>   
+                                                                            OnSendCallback;
+typedef std::function<void(void* /*userdata*/, const IPAddress& )>OnCloseCallback;
+typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
+typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnConnErrorCallback;
+
+struct ConnCallbacks
+{
+    OnRecvCallback      on_recv_callback{nullptr};
+    OnSendCallback      on_send_callback{nullptr};
+    OnCloseCallback     on_close_callback{nullptr};
+    OnTimeoutCallback   on_timeout_callback{nullptr};
+    OnConnErrorCallback     on_err_callback{nullptr};
+};
+
+} // namespace detail
+} // namespace bbt::network
 
 #define FASTERR(info, type) std::make_optional<Errcode>(info, type)
 #define FASTERR_ERROR(info) FASTERR(info, bbt::network::ErrType::ERRTYPE_ERROR)
