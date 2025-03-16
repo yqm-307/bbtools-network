@@ -1,8 +1,7 @@
-#include <bbt/network/adapter/libevent/Network.hpp>
+#include <bbt/network/TcpServer.hpp>
 #include <bbt/core/log/Logger.hpp>
 
 using namespace bbt::network;
-using namespace bbt::network::libevent;
 
 class EchoServer
 {
@@ -76,9 +75,8 @@ protected:
         m_conn_map.insert(std::make_pair(conn->GetConnId(), conn));
     }
 private:
-    ConnCallbacks m_callback;
-    Network m_network;
-    std::map<ConnId, libevent::ConnectionSPtr> m_conn_map;
+    
+    TcpServer m_server;
 };
 
 int main(int args, char* argv[])

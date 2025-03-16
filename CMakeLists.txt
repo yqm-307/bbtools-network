@@ -22,6 +22,7 @@ add_library(bbt_network SHARED ${SRCS})
 target_link_libraries(bbt_network
     event_pthreads
     bbt_pollevent
+    bbt_core
     pthread
 )
 

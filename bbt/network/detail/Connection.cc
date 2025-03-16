@@ -9,16 +9,22 @@
  * 
  */
 #include <string>
-#include <bbt/core/log/Logger.hpp>
 #include <bbt/core/clock/Clock.hpp>
 #include <bbt/core/thread/Lock.hpp>
 #include <bbt/pollevent/Event.hpp>
 #include <bbt/network/detail/Connection.hpp>
+#include <bbt/network/EvThread.hpp>
 
 namespace bbt::network::detail
 {
 
 typedef bbt::pollevent::EventOpt EventOpt;
+
+ConnId Connection::GenerateConnId()
+{
+    static std::atomic_uint64_t _id = 0;    // 返回值从1开始，0是非法值
+    return ++_id;
+}
 
 std::shared_ptr<Connection> Connection::Create(std::weak_ptr<EvThread> thread, evutil_socket_t socket, const IPAddress& ipaddr)
 {
@@ -28,8 +34,12 @@ std::shared_ptr<Connection> Connection::Create(std::weak_ptr<EvThread> thread, e
 Connection::Connection(std::weak_ptr<EvThread> thread, evutil_socket_t socket, const IPAddress& ipaddr):
     m_bind_thread(thread),
     m_socket_fd(socket),
-    m_peer_addr(ipaddr)
+    m_peer_addr(ipaddr),
+    m_conn_status(ConnStatus::emCONN_CONNECTED),
+    m_conn_id(GenerateConnId())
 {
+    Assert(m_socket_fd >= 0);
+    Assert(m_conn_id > 0);
 }
 
 Connection::~Connection()
@@ -48,16 +58,6 @@ void Connection::SetOpt_Callbacks(const ConnCallbacks& callbacks)
     m_callbacks = callbacks;
 }
 
-void Connection::SetOpt_UserData(void* userdata)
-{
-    m_userdata = userdata;
-}
-
-void Connection::GetUserData(void* userdata)
-{
-    userdata = m_userdata;
-}
-
 void Connection::OnRecv(const char* data, size_t len)
 {
     if (!m_callbacks.on_recv_callback) {
@@ -65,7 +65,7 @@ void Connection::OnRecv(const char* data, size_t len)
         return;
     }
 
-        m_callbacks.on_recv_callback(shared_from_this(), data, len);
+    m_callbacks.on_recv_callback(shared_from_this(), data, len);
 }
 
 void Connection::OnSend(ErrOpt err, size_t succ_len)
@@ -85,7 +85,7 @@ void Connection::OnClose()
         return;
     }
 
-    m_callbacks.on_close_callback(m_userdata, GetPeerAddress());
+    m_callbacks.on_close_callback(GetConnId(), GetPeerAddress());
 }
 
 void Connection::OnTimeout()
@@ -100,7 +100,7 @@ void Connection::OnTimeout()
 void Connection::OnError(const Errcode& err)
 {
     if (m_callbacks.on_err_callback) {
-        m_callbacks.on_err_callback(m_userdata, err);
+        m_callbacks.on_err_callback(err);
     }
 }
 
@@ -233,7 +233,7 @@ size_t Connection::Send(const char* buf, size_t len)
     return (len - remain);
 }
 
-int Connection::AsyncSend(const char* buf, size_t len)
+ErrOpt Connection::AsyncSend(const char* buf, size_t len)
 {
     /**
      *  此函数大概率是跨线程发送的，因此内部保证线程安全
@@ -245,9 +245,7 @@ int Connection::AsyncSend(const char* buf, size_t len)
      *  待发送数据，如果有，则继续上述循环直到buffer为空.
      */
     if (!IsConnected()) {
-        std::string info = bbt::core::log::format("send error! connection is disconnect! sockfd=%d, status=%d", GetSocket(), IsConnected() ? 1 : 0);
-        OnError(Errcode{info, ERRTYPE_ERROR});
-        return -1;
+        return FASTERR_ERROR("send error! connection is disconnect! sockfd=" + std::to_string(GetSocket()) +  " status=" + std::to_string(IsConnected() ? 1 : 0));
     }
 
     /**
@@ -257,7 +255,7 @@ int Connection::AsyncSend(const char* buf, size_t len)
     bool not_free = true;
     int append_len = AppendOutputBuffer(buf, len);
     if (!m_output_buffer_is_free.compare_exchange_strong(not_free, false)) {
-        return (append_len != len) ? (-1) : (0);
+        return (append_len != len) ? FASTERR_ERROR("output buffer failed! remain=" + std::to_string(len - append_len)) : FASTERR_NOTHING;
     }
 
     /* 如果此时没有进行中的发送事件，则注册一个新的发送事件 */
@@ -276,7 +274,7 @@ int Connection::AppendOutputBuffer(const char* data, size_t len)
     return change_num > 0 ? change_num : 0;
 }
 
-int Connection::RegistASendEvent()
+ErrOpt Connection::RegistASendEvent()
 {
     /**
      *  此事件只同时存在一个，其作用是每次发送结束后，检测一下
@@ -296,11 +294,11 @@ int Connection::RegistASendEvent()
 
     auto weak_this = weak_from_this();
     if (!BindThreadIsRunning())
-        return -1;
+        return FASTERR_ERROR("bind thread is stop!");
     
     auto thread = GetBindThread();
     if (thread == nullptr)
-        return -1;
+        return FASTERR_ERROR("bind thread is nullptr!");
 
     m_send_event = thread->RegisterEvent(GetSocket(), EventOpt::WRITEABLE | EventOpt::PERSIST,
     [weak_this, buffer_sptr](std::shared_ptr<Event> event, short events){
@@ -310,7 +308,7 @@ int Connection::RegistASendEvent()
     });
 
     m_send_event->StartListen(SEND_DATA_TIMEOUT_MS);
-    return 0;
+    return FASTERR_NOTHING;
 }
 
 void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events)
@@ -349,7 +347,7 @@ ErrOpt Connection::Timeout()
     return FASTERR_NOTHING;
 }
 
-std::shared_ptr<libevent::IOThread> Connection::GetBindThread()
+std::shared_ptr<EvThread> Connection::GetBindThread()
 {
     return m_bind_thread.lock();
 }

@@ -12,7 +12,6 @@
 #include <bbt/core/buffer/Buffer.hpp>
 #include <bbt/core/thread/Lock.hpp>
 #include <bbt/network/Define.hpp>
-#include <bbt/network/detail/EvThread.hpp>
 
 namespace bbt::network::detail
 {
@@ -21,7 +20,6 @@ class Connection:
     public std::enable_shared_from_this<Connection>
 {
     friend class EvThread;
-    typedef bbt::pollevent::Event Event;
 public:
     Connection(
         std::weak_ptr<EvThread> thread,
@@ -40,12 +38,8 @@ public:
     void                    SetOpt_Callbacks(const ConnCallbacks& callbacks);
     /* 设置空闲超时关闭Connection的时间 */
     void                    SetOpt_CloseTimeoutMS(int timeout_ms);
-    /* 设置用户数据 */
-    void                    SetOpt_UserData(void* userdata);
-    /* 读取用户数据 */
-    void                    GetUserData(void* userdata);
     /* 异步发送数据给对端 */
-    int                     AsyncSend(const char* buf, size_t len);
+    ErrOpt                  AsyncSend(const char* buf, size_t len);
     /* 关闭此连接 */
     void                    Close();
     bool                    IsConnected() const;
@@ -53,10 +47,10 @@ public:
     const IPAddress&        GetPeerAddress() const;
     evutil_socket_t         GetSocket() const;
     ConnId                  GetConnId() const;
+    void                    RunInEventLoop();
 
 protected:
     /* 启动Connection */
-    void                    RunInEventLoop();
     void                    OnEvent(evutil_socket_t sockfd, short events);
     void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
 
@@ -70,14 +64,15 @@ protected:
     void                    OnTimeout();
     void                    OnError(const Errcode& err);
 
-    int                     RegistASendEvent();
+    ErrOpt                  RegistASendEvent();
     int                     AppendOutputBuffer(const char* data, size_t len);
 
-    std::shared_ptr<libevent::IOThread> GetBindThread();
+    std::shared_ptr<EvThread> GetBindThread();
     bool                    BindThreadIsRunning();
 
     virtual void            CloseSocket() final; 
     virtual void            SetStatus(ConnStatus status) final;
+    static ConnId           GenerateConnId();
 private:
     std::weak_ptr<EvThread> m_bind_thread;
 
@@ -99,7 +94,6 @@ private:
                             m_output_mutex;
 
     int                     m_timeout_ms{CONNECTION_FREE_TIMEOUT_MS};           // 连接空闲超时事件
-    void*                   m_userdata{nullptr};
 
     int                     m_socket_fd{-1};
     IPAddress               m_peer_addr;

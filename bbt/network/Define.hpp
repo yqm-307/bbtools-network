@@ -28,13 +28,18 @@
 #include <bbt/core/util/Assert.hpp>
 #include <bbt/core/Attribute.hpp>
 #include <bbt/core/net/IPAddress.hpp>
+#include <bbt/core/buffer/Buffer.hpp>
 #include <bbt/network/Errcode.hpp>
+#include <bbt/pollevent/EventLoop.hpp>
 
 namespace bbt::network
 {
 
 using namespace bbt::core::errcode;
 using namespace bbt::core::net;
+using namespace bbt::pollevent;
+
+#define BBT_NETWORK_MODULE "[bbt::network]"
 
 // 空闲断开连接时间
 #define CONNECTION_FREE_TIMEOUT_MS 5000
@@ -60,26 +65,34 @@ enum NetworkStatus
     emNETWORK_STOP        = 3,
 };
 
+/* 线程状态枚举 */
+enum IOThreadRunStatus
+{
+    Default = 0,
+    Running = 1,
+    Finish = 2,
+};
+
 class TcpServer;
 class TcpClient;
+class EvThread;
 
 // 连接id
 typedef uint64_t ConnId;
 // 事件id
 typedef uint64_t EventId;
-
+typedef int IOThreadID;
 
 namespace detail
 {
 class Connection;
+
 typedef std::shared_ptr<Connection> ConnectionSPtr;
-typedef std::function<void(ConnectionSPtr /*conn*/, const char* /*data*/, size_t /*len*/)> 
-                                                                            OnRecvCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/, ErrOpt /*err */, size_t /*send_len*/)>   
-                                                                            OnSendCallback;
-typedef std::function<void(void* /*userdata*/, const IPAddress& )>OnCloseCallback;
-typedef std::function<void(ConnectionSPtr /*conn*/)>                        OnTimeoutCallback;
-typedef std::function<void(void* /*userdata*/, const Errcode&)>             OnConnErrorCallback;
+typedef std::function<void(ConnectionSPtr, const char*, size_t)>  OnRecvCallback;
+typedef std::function<void(ConnectionSPtr, ErrOpt, size_t)>   OnSendCallback;
+typedef std::function<void(ConnId, const IPAddress& )>  OnCloseCallback;
+typedef std::function<void(ConnectionSPtr)>             OnTimeoutCallback;
+typedef std::function<void(const Errcode&)>             OnConnErrorCallback;
 
 struct ConnCallbacks
 {
@@ -91,8 +104,17 @@ struct ConnCallbacks
 };
 
 } // namespace detail
+
+typedef std::function<void(ConnId)> OnTimeoutFunc;
+typedef std::function<void(ConnId)> OnCloseFunc;
+typedef std::function<void(ConnId, ErrOpt, size_t)> OnSendFunc; 
+typedef std::function<void(ConnId, const bbt::core::Buffer&)> OnRecvFunc;
+typedef std::function<void(const Errcode&)> OnErrFunc;
+typedef std::function<void(ConnId)> OnAcceptFunc;
+typedef std::function<void(ErrOpt)> OnConnectFunc;
+
 } // namespace bbt::network
 
 #define FASTERR(info, type) std::make_optional<Errcode>(info, type)
-#define FASTERR_ERROR(info) FASTERR(info, bbt::network::ErrType::ERRTYPE_ERROR)
+#define FASTERR_ERROR(info) FASTERR(BBT_NETWORK_MODULE info, bbt::network::ErrType::ERRTYPE_ERROR)
 #define FASTERR_NOTHING std::nullopt
