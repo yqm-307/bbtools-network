@@ -29,6 +29,7 @@ private:
     std::shared_ptr<EvThread> _GetThread();
     void            _DoConnect(int socket, short events);
     void            _InitConnection(std::shared_ptr<detail::Connection> conn);
+    void            _OnClose(ConnId id);
 private:
     std::shared_ptr<EvThread> m_ev_thread{nullptr};
 
@@ -38,7 +39,6 @@ private:
     detail::ConnectionSPtr m_conn{nullptr};
     int             m_connect_timeout{10000};
     int             m_connection_timeout{10000};
-    int             m_connect_fd{-1};
     std::shared_ptr<Event> m_connect_event{nullptr};
     std::mutex      m_connect_mtx;
 

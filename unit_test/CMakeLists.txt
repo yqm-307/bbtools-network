@@ -11,11 +11,11 @@ set(MY_LIBS
     bbt_network
 )
 
-add_executable(Test_Client client.cc)
-target_link_libraries(Test_Client ${MY_LIBS})
+add_executable(test_client client.cc)
+target_link_libraries(test_client ${MY_LIBS})
 
-add_executable(Test_Server server.cc)
-target_link_libraries(Test_Server ${MY_LIBS})
+add_executable(test_server server.cc)
+target_link_libraries(test_server ${MY_LIBS})
 
 add_executable(test_evthread evthread.cc)
 target_link_libraries(test_evthread ${MY_LIBS})

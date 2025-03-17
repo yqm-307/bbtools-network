@@ -8,8 +8,15 @@
 namespace bbt::network
 {
 
+void DetaultErr(const Errcode& err)
+{
+    printf("[TcpClient::DefaultErr] %s\n", err.CWhat());
+}
+
+
 TcpClient::TcpClient(std::shared_ptr<EvThread> evthread):
-    m_ev_thread(evthread)
+    m_ev_thread(evthread),
+    m_on_err(DetaultErr)
 {
 }
 
@@ -30,11 +37,11 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
     if (thread == nullptr)
         return FASTERR_ERROR("evthread is null!");
     
-    m_connect_fd = bbt::core::net::Util::CreateConnect(addr.GetIP().c_str(), addr.GetPort(), true);
-    if (m_connect_fd < 0)
+    int fd = bbt::core::net::Util::CreateConnect(addr.GetIP().c_str(), addr.GetPort(), true);
+    if (fd < 0)
         return FASTERR_ERROR("create connect socket failed!");
     
-    m_connect_event = thread->RegisterEvent(m_connect_fd, EventOpt::WRITEABLE | EventOpt::TIMEOUT | EventOpt::PERSIST,
+    m_connect_event = thread->RegisterEvent(fd, EventOpt::WRITEABLE | EventOpt::TIMEOUT | EventOpt::PERSIST,
     [weak_this{weak_from_this()}](std::shared_ptr<Event> event, short events)
     {
         if (auto shared_this = weak_this.lock(); shared_this != nullptr)
@@ -43,9 +50,7 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
 
     if (m_connect_event->StartListen(m_connect_timeout) != 0)
     {
-        ::close(m_connect_fd);
         m_connect_event = nullptr;
-        m_connect_fd = -1;
         return FASTERR_ERROR("event start listen failed!");
     }
 
@@ -79,13 +84,9 @@ void TcpClient::_DoConnect(int socket, short events)
     m_conn = std::make_shared<detail::Connection>(m_ev_thread, socket, m_serv_addr);
     m_on_connect(FASTERR_NOTHING);
     _InitConnection(m_conn);
-    m_connect_fd = -1;
-    return;
 
 ConnectFinal:
     // connect 处理完毕，销毁事件和连接
-    ::close(m_connect_fd);
-    m_connect_fd = -1;
     m_connect_event = nullptr;
 }
 
@@ -95,10 +96,7 @@ void TcpClient::Init()
     [weak_this{weak_from_this()}](ConnId connid, const IPAddress& addr)
     {
         if (auto shared_this = weak_this.lock(); shared_this != nullptr) {
-            if (shared_this->m_on_close)
-                shared_this->m_on_close(connid);
-            else
-                shared_this->m_on_err(Errcode{"no register onclose!", ErrType::ERRTYPE_ERROR});
+            shared_this->_OnClose(connid);
         }
     };
 
@@ -136,7 +134,7 @@ void TcpClient::Init()
             if (shared_this->m_on_timeout)
                 shared_this->m_on_timeout(conn->GetConnId());
             else
-                shared_this->m_on_err(Errcode{"no register onsend!", ErrType::ERRTYPE_ERROR});
+                shared_this->m_on_err(Errcode{"no register ontimeout!", ErrType::ERRTYPE_ERROR});
         }
     };
 }
@@ -150,6 +148,13 @@ void TcpClient::_InitConnection(std::shared_ptr<detail::Connection> conn)
     conn->RunInEventLoop();
 }
 
+void TcpClient::_OnClose(ConnId id)
+{
+    if (m_on_close)
+        m_on_close(id);
+    else
+        m_on_err(Errcode{"no register onclose!", ErrType::ERRTYPE_ERROR});
+}
 
 std::shared_ptr<EvThread> TcpClient::_GetThread()
 {

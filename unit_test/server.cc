@@ -1,6 +1,7 @@
 #include <bbt/network/TcpServer.hpp>
 #include <bbt/network/EvThread.hpp>
 #include <bbt/core/log/Logger.hpp>
+#include <bbt/core/clock/Clock.hpp>
 
 using namespace bbt::network;
 
@@ -12,15 +13,15 @@ int main()
 
     server->Init();
     server->SetOnClose([](ConnId id){
-        std::cout << "close connection " << id << std::endl;
+        std::cout << bbt::core::clock::getnow_str() << "close connection " << id << std::endl;
     });
 
     server->SetOnTimeout([](ConnId id){
-        std::cout << "timeout" << id << std::endl;
+        std::cout << bbt::core::clock::getnow_str() << "timeout" << id << std::endl;
     });
 
     auto err = server->AsyncListen({"", 11001}, [](ConnId id){
-        std::cout << "connect new conn" << id << std::endl;
+        std::cout << bbt::core::clock::getnow_str() << "connect new conn" << id << std::endl;
     });
 
     if (err.has_value())
@@ -28,10 +29,6 @@ int main()
 
     evthread->Start();
 
-    while (1)
-    {
-        sleep(1);
-    }
-
+    evthread->Join();
     BBT_BASE_LOG_INFO("server stoped!");
 }

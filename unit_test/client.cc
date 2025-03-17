@@ -17,11 +17,11 @@ int main()
     client->SetConnectionTimeout(1000);
 
     client->SetOnClose([](ConnId id){
-        std::cout << "close connection " << id << std::endl;
+        std::cout << bbt::core::clock::getnow_str() << "close connection " << id << std::endl;
     });
 
     client->SetOnConnect([](ErrOpt err){
-        std::cout << "onconnect! " << (err.has_value() ? err->CWhat() : "succ") << std::endl;
+        std::cout << bbt::core::clock::getnow_str() << "onconnect! " << (err.has_value() ? err->CWhat() : "succ") << std::endl;
     });
 
     client->AsyncConnect({"127.0.0.1", 11001}, 100);

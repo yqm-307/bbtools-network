@@ -104,7 +104,7 @@
             "name": "client",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/unit_test/Test_Client",
+            "program": "${workspaceFolder}/build/bin/unit_test/test_client",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/bin",
