@@ -52,7 +52,7 @@ public:
 protected:
     /* 启动Connection */
     void                    OnEvent(evutil_socket_t sockfd, short events);
-    void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events);
+    void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, short events);
 
     ErrOpt                  Recv(evutil_socket_t sockfd);
     size_t                  Send(const char* buf, size_t len);

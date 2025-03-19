@@ -1,85 +1,77 @@
-#include <bbt/network/adapter/libevent/Network.hpp>
+#include <bbt/network/TcpClient.hpp>
 #include <bbt/core/log/Logger.hpp>
+#include <bbt/network/EvThread.hpp>
+#include <bbt/pollevent/EventLoop.hpp>
+#include <bbt/pollevent/Event.hpp>
 
 using namespace bbt::network;
-using namespace bbt::network::libevent;
-ConnCallbacks callbacks;
+std::shared_ptr<Event> Timer = nullptr;
 
-void InitCallbacks()
+std::shared_ptr<TcpClient> NewClient(std::shared_ptr<EvThread> evthread)
 {
+    auto client = std::make_shared<TcpClient>(evthread);
 
-    callbacks.on_close_callback = 
-    [](void* udata, const IPAddress& addr) {
-        BBT_BASE_LOG_INFO("%s", addr.GetIPPort().c_str());
-    };
+    // ctrl z 事件监听
+    evthread->RegisterEvent(0, EventOpt::SIGNAL, [](auto, short events, auto){
+        std::cout << "[Echo Client] ctrl z" << std::endl;
+    });
 
-    callbacks.on_err_callback =
-    [](void* udata, const Errcode& err){
-        BBT_BASE_LOG_ERROR("errno=%s", err.CWhat());
-    };
+    client->Init();
+    client->SetOnConnect([client, evthread](auto id, auto err){
+        if (err.has_value()) {
+            std::cout << "[Echo Client] connect error: " << err->CWhat() << std::endl;
+            return;
+        }
+        else
+            std::cout << "[Echo Client] connect success! " << id << std::endl;
 
-    callbacks.on_recv_callback =
-    [](libevent::ConnectionSPtr sptr, const char* data, size_t len){
-        BBT_BASE_LOG_DEBUG("onrecv succ, size=%d", len);
-    };
+        Timer = evthread->RegisterEvent(0, EventOpt::TIMEOUT | EventOpt::PERSIST, [id, client](auto, short events, auto){
+            client->Send(bbt::core::Buffer{"hello world!"});
+        });
 
-    callbacks.on_send_callback =
-    [](libevent::ConnectionSPtr conn, ErrOpt err, size_t send_len){
-        BBT_BASE_LOG_DEBUG("[%d] send succ=%d", conn->GetConnId(), send_len);
-    };
+        Assert(Timer->StartListen(10) == 0);
+    });
 
-    callbacks.on_timeout_callback =
-    [](libevent::ConnectionSPtr conn){
-        BBT_BASE_LOG_DEBUG("[%d] timeout", conn->GetConnId());
-        conn->Close();
-    };
+    client->SetOnClose([client](auto id){
+        std::cout << "[Echo Client] close success! " << id << std::endl;
+    });
+
+    client->SetOnRecv([client](auto id, auto& buffer){
+        std::cout << "[Echo Client] recv: " << buffer.Peek() << std::endl;
+    });
+
+    client->SetOnSend([client](auto id, auto err, auto send_len){
+        if (err.has_value())
+            std::cout << "[Echo Client] send error: " << err->CWhat() << std::endl;
+        else
+            std::cout << "[Echo Client] send success: " << send_len << std::endl;
+    });
+
+    return client;
 }
 
 int main(int args, char* argv[])
 {
-    if (args != 3) {
-        printf("[usage] ./{exec_name} {ip} {port}\n");
+    if (args != 4) {
+        printf("[usage] ./{exec_name} {ip} {port} {n_client}\n");
         exit(-1);
     }
     char*   ip          = argv[1];
     int     port        = std::stoi(argv[2]);
+    int     max_client  = std::stoi(argv[3]);
 
+    std::vector<std::shared_ptr<TcpClient>> clients;
+    auto evthread = std::make_shared<EvThread>(std::make_shared<bbt::pollevent::EventLoop>());
 
-    Network network;
-    network.AutoInitThread(1);
-    network.Start();
-    ConnectionSPtr connection = nullptr;
-    bbt::core::thread::CountDownLatch count_down_latch{1};
-    const char* data = "hello world";
-    InitCallbacks();
-
-    auto err = network.AsyncConnect(ip, port, 1000,
-    [&connection, &count_down_latch](auto err, interface::INetConnectionSPtr new_conn){
-        if (err.has_value()) {
-            BBT_BASE_LOG_ERROR("%s", err->CWhat());
-            count_down_latch.Down();
-            return;
+    for (int i = 0; i < max_client; ++i) {
+        auto client = NewClient(evthread);
+        if (auto err = client->AsyncConnect(bbt::core::net::IPAddress{ip, port}, 1000); err.has_value()) {
+            std::cout << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
+            continue;
         }
-        auto sptr = std::static_pointer_cast<libevent::Connection>(new_conn);
-        BBT_BASE_LOG_INFO("async connect succ! peeraddr=%s", sptr->GetPeerAddress().GetIPPort().c_str());
-        sptr->SetOpt_Callbacks(callbacks);
-
-        connection = sptr;
-        count_down_latch.Down();
-    });
-
-    if (err.has_value())
-        BBT_BASE_LOG_ERROR(err->CWhat());
-    
-    network.Start();
-    count_down_latch.Wait();
-
-    if (connection == nullptr)
-        return -1;
-
-    auto end_time = bbt::core::clock::nowAfter(bbt::core::clock::seconds(3));
-    while (!bbt::core::clock::expired<bbt::core::clock::ms>(end_time)) {
-        Assert(connection->AsyncSend(data, strlen(data)) >= 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        clients.push_back(client);
     }
+
+    evthread->Start();
+    evthread->Join();
 }   

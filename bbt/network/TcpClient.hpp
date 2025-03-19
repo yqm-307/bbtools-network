@@ -14,7 +14,7 @@ public:
     void            Init();
 
     ErrOpt          AsyncConnect(const bbt::core::net::IPAddress& addr, int timeout);
-    ErrOpt          Send(bbt::core::Buffer& buffer);
+    ErrOpt          Send(const bbt::core::Buffer& buffer);
     ErrOpt          Close();
     ErrOpt          Reconnect();
     bool            IsConnected();

@@ -19,7 +19,7 @@ public:
     IPAddress       GetListenAddress();
     bool            IsListening();
     void            SetTimeout(int connection_timeout);
-    ErrOpt          Send(ConnId connid, bbt::core::Buffer& buffer);
+    ErrOpt          Send(ConnId connid, const bbt::core::Buffer& buffer);
 
     void            SetOnTimeout(const OnTimeoutFunc& on_timeout) { m_on_timeout = on_timeout; }
     void            SetOnClose(const OnCloseFunc& on_close) { m_on_close = on_close; }

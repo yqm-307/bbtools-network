@@ -78,9 +78,9 @@ class TcpClient;
 class EvThread;
 
 // 连接id
-typedef uint64_t ConnId;
+typedef int64_t ConnId;
 // 事件id
-typedef uint64_t EventId;
+typedef int64_t EventId;
 typedef int IOThreadID;
 
 namespace detail
@@ -111,7 +111,7 @@ typedef std::function<void(ConnId, ErrOpt, size_t)> OnSendFunc;
 typedef std::function<void(ConnId, const bbt::core::Buffer&)> OnRecvFunc;
 typedef std::function<void(const Errcode&)> OnErrFunc;
 typedef std::function<void(ConnId)> OnAcceptFunc;
-typedef std::function<void(ErrOpt)> OnConnectFunc;
+typedef std::function<void(ConnId, ErrOpt)> OnConnectFunc;
 
 } // namespace bbt::network
 

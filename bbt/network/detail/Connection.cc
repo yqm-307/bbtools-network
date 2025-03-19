@@ -150,10 +150,10 @@ void Connection::RunInEventLoop()
         EventOpt::CLOSE |       // 关闭事件
         EventOpt::PERSIST |     // 持久化
         EventOpt::READABLE,     // 可读事件
-    [weak_this](std::shared_ptr<Event> event, short events){
+    [weak_this](int fd, short events, EventId eventid){
         auto pthis = weak_this.lock();
         if (!pthis) return;
-        pthis->OnEvent(event->GetSocket(), events);
+        pthis->OnEvent(fd, events);
     });
 
     int ret = m_event->StartListen(m_timeout_ms);
@@ -301,17 +301,17 @@ ErrOpt Connection::RegistASendEvent()
         return FASTERR_ERROR("bind thread is nullptr!");
 
     m_send_event = thread->RegisterEvent(GetSocket(), EventOpt::WRITEABLE | EventOpt::PERSIST,
-    [weak_this, buffer_sptr](std::shared_ptr<Event> event, short events){
+    [weak_this, buffer_sptr](int fd, short events, EventId eventid){
         auto pthis = weak_this.lock();
         if (!pthis) return;
-        pthis->OnSendEvent(buffer_sptr, event, events);
+        pthis->OnSendEvent(buffer_sptr, events);
     });
 
     m_send_event->StartListen(SEND_DATA_TIMEOUT_MS);
     return FASTERR_NOTHING;
 }
 
-void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, std::shared_ptr<Event> event, short events)
+void Connection::OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, short events)
 {
     ErrOpt err = std::nullopt;
     int size = 0;

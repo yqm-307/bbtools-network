@@ -20,7 +20,7 @@ int main()
         std::cout << bbt::core::clock::getnow_str() << "close connection " << id << std::endl;
     });
 
-    client->SetOnConnect([](ErrOpt err){
+    client->SetOnConnect([](auto id, ErrOpt err){
         std::cout << bbt::core::clock::getnow_str() << "onconnect! " << (err.has_value() ? err->CWhat() : "succ") << std::endl;
     });
 

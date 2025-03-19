@@ -7,37 +7,9 @@
 namespace bbt::network
 {
 
-struct TcpServer::ConnectEventMapImpl
-{
-    ErrOpt            AddConnectEvent(std::shared_ptr<Event> event);
-    ErrOpt            DelConnectEvent(EventId event);
-    std::mutex                      m_connect_mutex;
-    std::map<EventId, std::shared_ptr<Event>>
-                                    m_connect_events;           // 连接事件
-};
-
-ErrOpt TcpServer::ConnectEventMapImpl::AddConnectEvent(std::shared_ptr<Event> event)
-{
-    std::lock_guard<std::mutex> lock(m_connect_mutex);
-    auto [it, succ] = m_connect_events.insert(std::make_pair(event->GetEventId(), event));
-    if (!succ)
-        return FASTERR_ERROR("event repeat!");
-    
-    return FASTERR_NOTHING;
-}
-
-ErrOpt TcpServer::ConnectEventMapImpl::DelConnectEvent(EventId eventid)
-{
-    std::lock_guard<std::mutex> lock(m_connect_mutex);
-    auto count = m_connect_events.erase(eventid);
-    if (count <= 0)
-        return FASTERR_ERROR("event not found!");
-    
-    return FASTERR_NOTHING;
-}
-
 TcpServer::TcpServer(std::shared_ptr<EvThread> evthread):
-    m_ev_thread(evthread)
+    m_ev_thread(evthread),
+    m_on_err([](auto& err){ printf("[TcpServer::DefaultErr] %s\n", err.CWhat()); })
 {
 }
 
@@ -51,10 +23,7 @@ void TcpServer::Init()
     [weak_this{weak_from_this()}](ConnId connid, const IPAddress& addr)
     {
         if (auto shared_this = weak_this.lock(); shared_this != nullptr) {
-            if (shared_this->m_on_close)
-                shared_this->m_on_close(connid);
-            else
-                shared_this->m_on_err(Errcode{"no register onclose!", ErrType::ERRTYPE_ERROR});
+            shared_this->OnClose(connid);
         }
     };
 
@@ -113,10 +82,10 @@ bbt::core::errcode::ErrOpt TcpServer::AsyncListen(const bbt::core::net::IPAddres
 
     // 初始化事件
     m_listen_event = GetThread()->RegisterEvent(fd, EventOpt::READABLE | EventOpt::PERSIST,
-    [weak_this{weak_from_this()}, onaccept_cb, thread{GetThread()}](std::shared_ptr<Event> event, short events){
+    [weak_this{weak_from_this()}, onaccept_cb, thread{GetThread()}](int fd, short events, EventId evetid){
         if (auto shared_this = weak_this.lock(); shared_this != nullptr) {
             auto pthis = std::static_pointer_cast<TcpServer>(shared_this);
-            pthis->_Accept(event->GetSocket(), events, onaccept_cb, thread);
+            pthis->_Accept(fd, events, onaccept_cb, thread);
         }
     });
 
@@ -190,7 +159,7 @@ void TcpServer::SetTimeout(int connection_timeout)
     m_connection_timeout = connection_timeout;
 }
 
-ErrOpt TcpServer::Send(ConnId connid, bbt::core::Buffer& buffer)
+ErrOpt TcpServer::Send(ConnId connid, const bbt::core::Buffer& buffer)
 {
     std::lock_guard<std::mutex> _(m_conn_map_mutex);
     auto it = m_conn_map.find(connid);
@@ -231,6 +200,8 @@ void TcpServer::OnClose(ConnId connid)
 
     if (m_on_close != nullptr)
         m_on_close(connid);
+    else
+        m_on_err(Errcode{"no register onclose!", ErrType::ERRTYPE_ERROR});
 }
 
 std::shared_ptr<EvThread> TcpServer::GetThread()
