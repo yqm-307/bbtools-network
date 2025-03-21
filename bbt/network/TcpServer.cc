@@ -170,6 +170,16 @@ ErrOpt TcpServer::Send(ConnId connid, const bbt::core::Buffer& buffer)
     return conn->AsyncSend(buffer.Peek(), buffer.Size());
 }
 
+void TcpServer::Close(ConnId connid)
+{
+    std::lock_guard<std::mutex> _(m_conn_map_mutex);
+    auto it = m_conn_map.find(connid);
+    if (it == m_conn_map.end())
+        return;
+    
+    auto conn = it->second;
+    conn->Close();
+}
 
 void TcpServer::OnTimeout(ConnId connid)
 {
