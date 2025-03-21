@@ -95,7 +95,7 @@ bbt::core::errcode::ErrOpt TcpServer::AsyncListen(const bbt::core::net::IPAddres
     return FASTERR_NOTHING;
 }
 
-bbt::core::errcode::ErrOpt TcpServer::StopListen(const bbt::core::net::IPAddress& addr)
+bbt::core::errcode::ErrOpt TcpServer::StopListen()
 {
     std::lock_guard<std::mutex> _(m_listen_mtx);
 

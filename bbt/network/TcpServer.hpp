@@ -15,7 +15,7 @@ public:
     void            Init();
 
     ErrOpt          AsyncListen(const bbt::core::net::IPAddress& addr, const OnAcceptFunc& onaccept_cb);
-    ErrOpt          StopListen(const bbt::core::net::IPAddress& addr);
+    ErrOpt          StopListen();
     IPAddress       GetListenAddress();
     bool            IsListening();
     void            SetTimeout(int connection_timeout);
