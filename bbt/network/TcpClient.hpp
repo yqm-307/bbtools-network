@@ -16,8 +16,9 @@ public:
     ErrOpt          AsyncConnect(const bbt::core::net::IPAddress& addr, int timeout);
     ErrOpt          Send(const bbt::core::Buffer& buffer);
     ErrOpt          Close();
-    ErrOpt          Reconnect();
     bool            IsConnected();
+    ConnId          GetConnId();
+
     void            SetConnectionTimeout(int timeout) { m_connection_timeout = timeout; }
     void            SetOnConnect(const OnConnectFunc& on_connect) { m_on_connect = on_connect; }
     void            SetOnTimeout(const OnTimeoutFunc& on_timeout) { m_on_timeout = on_timeout; }

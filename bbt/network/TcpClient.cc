@@ -144,6 +144,11 @@ void TcpClient::_InitConnection(std::shared_ptr<detail::Connection> conn)
 
 void TcpClient::_OnClose(ConnId id)
 {
+    {
+        std::lock_guard<std::mutex> _(m_connect_mtx);
+        m_conn = nullptr;
+        m_connect_event = nullptr;
+    }
     if (m_on_close)
         m_on_close(id);
     else
@@ -170,16 +175,20 @@ ErrOpt TcpClient::Close()
     return FASTERR_NOTHING;
 }
 
-ErrOpt TcpClient::Reconnect()
-{
-    Assert(false);
-    return FASTERR_NOTHING;
-}
-
 bool TcpClient::IsConnected()
 {
     return m_conn != nullptr && m_conn->IsConnected();
 }
+
+ConnId TcpClient::GetConnId()
+{
+    std::lock_guard<std::mutex> _(m_connect_mtx);
+    if (m_conn == nullptr)
+        return -1;
+
+    return m_conn->GetConnId();
+}
+
 
 
 
