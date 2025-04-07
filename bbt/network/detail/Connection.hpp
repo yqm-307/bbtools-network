@@ -11,7 +11,7 @@
 #pragma once
 #include <bbt/core/buffer/Buffer.hpp>
 #include <bbt/core/thread/Lock.hpp>
-#include <bbt/network/Define.hpp>
+#include <bbt/network/detail/Define.hpp>
 
 namespace bbt::network::detail
 {

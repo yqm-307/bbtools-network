@@ -166,7 +166,7 @@ void Connection::OnEvent(evutil_socket_t sockfd, short event)
         /* 尝试读取套接字数据，如果对端关闭，一并关闭此连接 */
         auto err = Recv(sockfd);
         if (err.has_value()) OnError(err.value());
-        if (err.has_value() && err.value().Type() == ErrType::ERRTYPE_NETWORK_RECV_EOF)
+        if (err.has_value() && err.value().Type() == emErr::ERRTYPE_NETWORK_RECV_EOF)
             Close();
     } else if (event & EventOpt::TIMEOUT) {
         /* 当连接空闲超时时，直接通过用户注册的回调通知用户 */

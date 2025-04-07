@@ -39,7 +39,7 @@ void TcpServer::Init()
             if (shared_this->m_on_recv)
                 shared_this->m_on_recv(conn->GetConnId(), bbt::core::Buffer{data, len});
             else
-                shared_this->m_on_err(Errcode{"no register onrecv!", ErrType::ERRTYPE_ERROR});
+                shared_this->m_on_err(Errcode{"no register onrecv!", emErr::ERRTYPE_ERROR});
         }
     };
 
@@ -50,7 +50,7 @@ void TcpServer::Init()
             if (shared_this->m_on_send)
                 shared_this->m_on_send(conn->GetConnId(), err, send_succ_len);
             else
-                shared_this->m_on_err(Errcode{"no register onsend!", ErrType::ERRTYPE_ERROR});
+                shared_this->m_on_err(Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
         }
     };
 
@@ -61,7 +61,7 @@ void TcpServer::Init()
             if (shared_this->m_on_timeout)
                 shared_this->m_on_timeout(conn->GetConnId());
             else
-                shared_this->m_on_err(Errcode{"no register onsend!", ErrType::ERRTYPE_ERROR});
+                shared_this->m_on_err(Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
         }
     };
 }
@@ -211,7 +211,7 @@ void TcpServer::OnClose(ConnId connid)
     if (m_on_close != nullptr)
         m_on_close(connid);
     else
-        m_on_err(Errcode{"no register onclose!", ErrType::ERRTYPE_ERROR});
+        m_on_err(Errcode{"no register onclose!", emErr::ERRTYPE_ERROR});
 }
 
 std::shared_ptr<EvThread> TcpServer::GetThread()

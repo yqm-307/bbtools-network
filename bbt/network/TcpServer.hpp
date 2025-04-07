@@ -1,5 +1,5 @@
 #pragma once
-#include <bbt/network/Define.hpp>
+#include <bbt/network/detail/Define.hpp>
 #include <bbt/core/crypto/BKDR.hpp>
 
 namespace bbt::network
