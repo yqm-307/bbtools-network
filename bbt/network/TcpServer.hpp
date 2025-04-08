@@ -1,4 +1,5 @@
 #pragma once
+#include <bbt/pollevent/EvThread.hpp>
 #include <bbt/network/detail/Define.hpp>
 #include <bbt/core/crypto/BKDR.hpp>
 
@@ -14,12 +15,12 @@ public:
 
     void            Init();
 
-    ErrOpt          AsyncListen(const bbt::core::net::IPAddress& addr, const OnAcceptFunc& onaccept_cb);
-    ErrOpt          StopListen();
+    core::errcode::ErrOpt AsyncListen(const bbt::core::net::IPAddress& addr, const OnAcceptFunc& onaccept_cb);
+    core::errcode::ErrOpt StopListen();
     IPAddress       GetListenAddress();
     bool            IsListening();
     void            SetTimeout(int connection_timeout);
-    ErrOpt          Send(ConnId connid, const bbt::core::Buffer& buffer);
+    core::errcode::ErrOpt Send(ConnId connid, const bbt::core::Buffer& buffer);
     void            Close(ConnId connid);
 
     void            SetOnTimeout(const OnTimeoutFunc& on_timeout) { m_on_timeout = on_timeout; }
@@ -31,7 +32,7 @@ public:
 private:
     void            OnTimeout(ConnId connid);
     void            OnClose(ConnId connid);
-    void            OnSend(ConnId connid, ErrOpt err, size_t send_len);
+    void            OnSend(ConnId connid, core::errcode::ErrOpt err, size_t send_len);
     void            OnRecv(ConnId connid, bbt::core::Buffer& buffer);
 
     std::shared_ptr<EvThread> GetThread();
@@ -42,7 +43,7 @@ private:
     struct AddressHash { std::size_t operator()(const IPAddress& addr) const { return core::crypto::BKDR::BKDRHash(addr.GetIPPort());}; };
 
 private:
-    std::shared_ptr<EvThread>       m_ev_thread{nullptr};
+    std::shared_ptr<pollevent::EvThread> m_ev_thread{nullptr};
     detail::ConnCallbacks           callbacks;
 
     std::unordered_map<ConnId, detail::ConnectionSPtr> m_conn_map;

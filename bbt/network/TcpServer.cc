@@ -2,7 +2,8 @@
 #include <bbt/core/net/SocketUtil.hpp>
 #include <bbt/pollevent/Event.hpp>
 #include <bbt/network/detail/Connection.hpp>
-#include <bbt/network/EvThread.hpp>
+
+using namespace bbt::core::errcode;
 
 namespace bbt::network
 {

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project(bbtools-network)
 
-# set(CMAKE_CXX_FALGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -O2")
-set(CMAKE_CXX_FALGS "${CMAKE_CXX_FLAGS} -std=c++17 -g")
+set(CMAKE_CXX_FALGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -O2")
+# set(CMAKE_CXX_FALGS "${CMAKE_CXX_FLAGS} -std=c++17 -g")
 
 include_directories(bbt)
 
@@ -20,11 +20,9 @@ file(GLOB_RECURSE SRCS
 add_library(bbt_network SHARED ${SRCS})
 
 target_link_libraries(bbt_network
-    event_pthreads
     bbt_pollevent
     bbt_core
     pthread
 )
 
-add_subdirectory(unit_test)
-enable_testing()
+add_subdirectory(example)

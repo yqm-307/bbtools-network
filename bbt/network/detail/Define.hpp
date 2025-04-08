@@ -86,23 +86,13 @@ enum NetworkStatus
     emNETWORK_STOP        = 3,
 };
 
-/* 线程状态枚举 */
-enum IOThreadRunStatus
-{
-    Default = 0,
-    Running = 1,
-    Finish = 2,
-};
-
 class TcpServer;
 class TcpClient;
-class EvThread;
 
 // 连接id
 typedef int64_t ConnId;
 // 事件id
 typedef int64_t EventId;
-typedef int IOThreadID;
 
 namespace detail
 {
@@ -110,10 +100,10 @@ class Connection;
 
 typedef std::shared_ptr<Connection> ConnectionSPtr;
 typedef std::function<void(ConnectionSPtr, const char*, size_t)>  OnRecvCallback;
-typedef std::function<void(ConnectionSPtr, ErrOpt, size_t)>   OnSendCallback;
+typedef std::function<void(ConnectionSPtr, core::errcode::ErrOpt, size_t)>   OnSendCallback;
 typedef std::function<void(ConnId, const IPAddress& )>  OnCloseCallback;
 typedef std::function<void(ConnectionSPtr)>             OnTimeoutCallback;
-typedef std::function<void(const Errcode&)>             OnConnErrorCallback;
+typedef std::function<void(const core::errcode::Errcode&)>             OnConnErrorCallback;
 
 struct ConnCallbacks
 {
@@ -128,11 +118,11 @@ struct ConnCallbacks
 
 typedef std::function<void(ConnId)> OnTimeoutFunc;
 typedef std::function<void(ConnId)> OnCloseFunc;
-typedef std::function<void(ConnId, ErrOpt, size_t)> OnSendFunc; 
+typedef std::function<void(ConnId, core::errcode::ErrOpt, size_t)> OnSendFunc; 
 typedef std::function<void(ConnId, const bbt::core::Buffer&)> OnRecvFunc;
-typedef std::function<void(const Errcode&)> OnErrFunc;
+typedef std::function<void(const core::errcode::Errcode&)> OnErrFunc;
 typedef std::function<void(ConnId)> OnAcceptFunc;
-typedef std::function<void(ConnId, ErrOpt)> OnConnectFunc;
+typedef std::function<void(ConnId, core::errcode::ErrOpt)> OnConnectFunc;
 
 } // namespace bbt::network
 

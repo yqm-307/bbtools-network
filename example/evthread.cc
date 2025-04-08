@@ -1,11 +1,12 @@
 #include <iostream>
-#include <bbt/network/EvThread.hpp>
+#include <bbt/pollevent/EvThread.hpp>
+#include <bbt/pollevent/EventLoop.hpp>
 #include <bbt/core/clock/Clock.hpp>
 #include <bbt/pollevent/Event.hpp>
 #include <bbt/core/thread/Lock.hpp>
 #include <sys/signal.h>
 
-using namespace bbt::network;
+using namespace bbt::pollevent;
 
 int main()
 {

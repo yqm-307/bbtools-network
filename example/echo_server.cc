@@ -1,6 +1,6 @@
 #include <bbt/network/TcpServer.hpp>
 #include <bbt/core/log/Logger.hpp>
-#include <bbt/network/EvThread.hpp>
+#include <bbt/pollevent/EvThread.hpp>
 #include <bbt/core/clock/Clock.hpp>
 
 using namespace bbt::network;
@@ -27,7 +27,7 @@ public:
             if (err.has_value())
                 std::cout << getnow_str() << "[EchoServer] send error: " << err->CWhat() << std::endl;
         });
-        m_server->SetOnSend([this](ConnId id, ErrOpt err, size_t len){});
+        m_server->SetOnSend([this](ConnId id, bbt::core::errcode::ErrOpt err, size_t len){});
     }
 
     ~EchoServer()

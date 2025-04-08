@@ -1,6 +1,6 @@
 #include <event2/thread.h>
 #include <bbt/network/TcpClient.hpp>
-#include <bbt/network/EvThread.hpp>
+#include <bbt/pollevent/EvThread.hpp>
 #include <bbt/core/clock/Clock.hpp>
 
 using namespace bbt::core::errcode;

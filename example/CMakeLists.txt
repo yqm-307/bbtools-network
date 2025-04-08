@@ -1,8 +1,4 @@
-set(Wall_Flag "-Wall -Wno-sign-compare -Wno-format -Wno-reorder -Wno-unknown-pragmas")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 ${Wall_Flag} -g")
-
-enable_testing()
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/unit_test)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/example)
 
 set(MY_LIBS
     boost_unit_test_framework

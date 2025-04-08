@@ -11,6 +11,7 @@
 #pragma once
 #include <bbt/core/buffer/Buffer.hpp>
 #include <bbt/core/thread/Lock.hpp>
+#include <bbt/pollevent/EvThread.hpp>
 #include <bbt/network/detail/Define.hpp>
 
 namespace bbt::network::detail
@@ -39,7 +40,7 @@ public:
     /* 设置空闲超时关闭Connection的时间 */
     void                    SetOpt_CloseTimeoutMS(int timeout_ms);
     /* 异步发送数据给对端 */
-    ErrOpt                  AsyncSend(const char* buf, size_t len);
+    core::errcode::ErrOpt   AsyncSend(const char* buf, size_t len);
     /* 关闭此连接 */
     void                    Close();
     bool                    IsConnected() const;
@@ -54,17 +55,17 @@ protected:
     void                    OnEvent(evutil_socket_t sockfd, short events);
     void                    OnSendEvent(std::shared_ptr<bbt::core::Buffer> output_buffer, short events);
 
-    ErrOpt                  Recv(evutil_socket_t sockfd);
+    core::errcode::ErrOpt   Recv(evutil_socket_t sockfd);
     size_t                  Send(const char* buf, size_t len);
-    ErrOpt                  Timeout();
+    core::errcode::ErrOpt   Timeout();
 
     void                    OnRecv(const char* data, size_t len);
-    void                    OnSend(ErrOpt err, size_t succ_len);
+    void                    OnSend(core::errcode::ErrOpt err, size_t succ_len);
     void                    OnClose();
     void                    OnTimeout();
-    void                    OnError(const Errcode& err);
+    void                    OnError(const core::errcode::Errcode& err);
 
-    ErrOpt                  RegistASendEvent();
+    core::errcode::ErrOpt   RegistASendEvent();
     int                     AppendOutputBuffer(const char* data, size_t len);
 
     std::shared_ptr<EvThread> GetBindThread();

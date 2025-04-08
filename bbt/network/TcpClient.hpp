@@ -1,4 +1,5 @@
 #pragma once
+#include <bbt/pollevent/EvThread.hpp>
 #include <bbt/network/detail/Define.hpp>
 
 namespace bbt::network
@@ -8,14 +9,14 @@ class TcpClient final:
     public std::enable_shared_from_this<TcpClient>
 {
 public:
-    TcpClient(std::shared_ptr<EvThread> evthread);
+    TcpClient(std::shared_ptr<pollevent::EvThread> evthread);
     ~TcpClient() = default;
 
     void            Init();
 
-    ErrOpt          AsyncConnect(const bbt::core::net::IPAddress& addr, int timeout);
-    ErrOpt          Send(const bbt::core::Buffer& buffer);
-    ErrOpt          Close();
+    core::errcode::ErrOpt AsyncConnect(const bbt::core::net::IPAddress& addr, int timeout);
+    core::errcode::ErrOpt Send(const bbt::core::Buffer& buffer);
+    core::errcode::ErrOpt Close();
     bool            IsConnected();
     ConnId          GetConnId();
 
@@ -27,12 +28,12 @@ public:
     void            SetOnRecv(const OnRecvFunc& on_recv) { m_on_recv = on_recv; }
     void            SetOnErr(const OnErrFunc& on_err) {m_on_err = on_err; }
 private:
-    std::shared_ptr<EvThread> _GetThread();
+    std::shared_ptr<pollevent::EvThread> _GetThread();
     void            _DoConnect(int socket, short events);
     void            _InitConnection(std::shared_ptr<detail::Connection> conn);
     void            _OnClose(ConnId id);
 private:
-    std::shared_ptr<EvThread> m_ev_thread{nullptr};
+    std::shared_ptr<pollevent::EvThread> m_ev_thread{nullptr};
 
     detail::ConnCallbacks callbacks;
 

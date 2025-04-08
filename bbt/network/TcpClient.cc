@@ -1,9 +1,11 @@
 #include <bbt/core/clock/Clock.hpp>
 #include <bbt/core/net/SocketUtil.hpp>
 #include <bbt/pollevent/Event.hpp>
+#include <bbt/pollevent/EvThread.hpp>
 #include <bbt/network/TcpClient.hpp>
-#include <bbt/network/EvThread.hpp>
 #include <bbt/network/detail/Connection.hpp>
+
+using namespace bbt::core::errcode;
 
 namespace bbt::network
 {
