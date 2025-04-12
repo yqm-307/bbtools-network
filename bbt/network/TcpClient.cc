@@ -53,6 +53,12 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
     return FASTERR_NOTHING;
 }
 
+core::errcode::ErrOpt TcpClient::ReConnect()
+{
+    return AsyncConnect(m_serv_addr, m_connect_timeout);
+}
+
+
 void TcpClient::_DoConnect(int socket, short events)
 {
     std::shared_ptr<detail::Connection> new_conn{nullptr};
