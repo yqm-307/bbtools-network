@@ -12,13 +12,59 @@ public:
     TcpClient(std::shared_ptr<pollevent::EvThread> evthread);
     ~TcpClient() = default;
 
+    /**
+     * @brief 初始化TcpClient的内部事件
+     */
     void            Init();
 
+    /**
+     * @brief 向addr发起一个异步连接，且当连接超过timeout时间还未
+     * 成功建立，则连接失败。无论成功或者失败，都会通过OnConnect回
+     * 调通知
+     * 
+     * @param addr 
+     * @param timeout 
+     * @return core::errcode::ErrOpt 
+     */
     core::errcode::ErrOpt AsyncConnect(const bbt::core::net::IPAddress& addr, int timeout);
+
+    /**
+     * @brief 重新发起连接
+     * 
+     * 实际上就是调用了一次AsyncConnect，但是使用最近一次AsyncConnect的地址和设置
+     * 
+     * @return core::errcode::ErrOpt 
+     */
     core::errcode::ErrOpt ReConnect();
+
+    /**
+     * @brief 向对端发送数据，这个接口是异步且线程安全的
+     * 
+     * @param buffer 
+     * @return core::errcode::ErrOpt 
+     */
     core::errcode::ErrOpt Send(const bbt::core::Buffer& buffer);
+
+    /**
+     * @brief 关闭连接
+     * 
+     * @return core::errcode::ErrOpt 
+     */
     core::errcode::ErrOpt Close();
+
+    /**
+     * @brief 判断当前连接是否进行中
+     * 
+     * @return true 
+     * @return false 
+     */
     bool            IsConnected();
+
+    /**
+     * @brief 获取当前TcpClient的连接id
+     * 
+     * @return ConnId 成功返回大于0的值，如果失败返回-1
+     */
     ConnId          GetConnId();
 
     void            SetConnectionTimeout(int timeout) { m_connection_timeout = timeout; }

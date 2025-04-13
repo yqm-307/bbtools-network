@@ -13,16 +13,69 @@ public:
     TcpServer(std::shared_ptr<EvThread> evthread);
     ~TcpServer();
 
+    /**
+     * @brief 初始化内部事件
+     */
     void            Init();
 
+    /**
+     * @brief 启动监听
+     * 
+     * @param addr 监听的地址
+     * @param onaccept_cb 接受连接的回调函数
+     * @return core::errcode::ErrOpt 
+     */
     core::errcode::ErrOpt AsyncListen(const bbt::core::net::IPAddress& addr, const OnAcceptFunc& onaccept_cb);
+
+    /**
+     * @brief 停止监听
+     * 
+     * @return core::errcode::ErrOpt 
+     */
     core::errcode::ErrOpt StopListen();
+
+    /**
+     * @brief 获取当前监听的地址
+     * 
+     * @return IPAddress 
+     */
     IPAddress       GetListenAddress();
+
+    /**
+     * @brief 是否正在监听
+     * 
+     * @return true 
+     * @return false 
+     */
     bool            IsListening();
+
+    /**
+     * @brief 设置一个超时时间
+     * 在TcpServer接收到一个新的连接后，会设置一个超时时间
+     * 当连接空闲超过connection_timeout后，则会触发Timeout
+     * 并关闭连接
+     * 
+     * @param connection_timeout 
+     */
     void            SetTimeout(int connection_timeout);
+
+    /**
+     * @brief 向指定的连接发送数据，这个接口是异步且线程安全的
+     * 
+     * @param connid 
+     * @param buffer 
+     * @return core::errcode::ErrOpt 
+     */
     core::errcode::ErrOpt Send(ConnId connid, const bbt::core::Buffer& buffer);
+
+    /**
+     * @brief 关闭指定连接
+     * 
+     * @param connid 
+     */
     void            Close(ConnId connid);
 
+    // 设置回调
     void            SetOnTimeout(const OnTimeoutFunc& on_timeout) { m_on_timeout = on_timeout; }
     void            SetOnClose(const OnCloseFunc& on_close) { m_on_close = on_close; }
     void            SetOnSend(const OnSendFunc& on_send) { m_on_send = on_send; }

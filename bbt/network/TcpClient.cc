@@ -1,3 +1,4 @@
+#include <iostream>
 #include <bbt/core/clock/Clock.hpp>
 #include <bbt/core/net/SocketUtil.hpp>
 #include <bbt/pollevent/Event.hpp>
@@ -12,7 +13,7 @@ namespace bbt::network
 
 TcpClient::TcpClient(std::shared_ptr<EvThread> evthread):
     m_ev_thread(evthread),
-    m_on_err([](auto& err){ printf("[TcpClient::DefaultErr] %s\n", err.CWhat()); })
+    m_on_err([](auto& err){ std::cerr << "[TcpClient::DefaultErr] " << err.CWhat() << std::endl; })
 {
 }
 

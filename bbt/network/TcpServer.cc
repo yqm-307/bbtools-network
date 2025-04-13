@@ -1,3 +1,4 @@
+#include <iostream>
 #include <bbt/network/TcpServer.hpp>
 #include <bbt/core/net/SocketUtil.hpp>
 #include <bbt/pollevent/Event.hpp>
@@ -10,7 +11,7 @@ namespace bbt::network
 
 TcpServer::TcpServer(std::shared_ptr<EvThread> evthread):
     m_ev_thread(evthread),
-    m_on_err([](auto& err){ printf("[TcpServer::DefaultErr] %s\n", err.CWhat()); })
+    m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
 {
 }
 
