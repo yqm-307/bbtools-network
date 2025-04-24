@@ -17,6 +17,7 @@ TcpServer::TcpServer(std::shared_ptr<EvThread> evthread):
 
 TcpServer::~TcpServer()
 {
+    StopListen();
 }
 
 void TcpServer::Init()
@@ -75,15 +76,15 @@ bbt::core::errcode::ErrOpt TcpServer::AsyncListen(const bbt::core::net::IPAddres
     if (m_listen_event != nullptr)
         return Errcode{"already listening!", ERRTYPE_ERROR};
 
-    auto fd = Util::CreateListen(listen_addr.GetIP().c_str(), listen_addr.GetPort(), true);
-    if (fd < 0)
+    m_listen_fd = Util::CreateListen(listen_addr.GetIP().c_str(), listen_addr.GetPort(), true);
+    if (m_listen_fd < 0)
         return Errcode{"create listen socket failed! errno=" + std::to_string(errno) + ", errstr=" + std::string{strerror(errno)}, ERRTYPE_ERROR};
 
     if (onaccept_cb == nullptr)
         return Errcode{"on accept callback is null!", ERRTYPE_ERROR};
 
     // 初始化事件
-    m_listen_event = GetThread()->RegisterEvent(fd, EventOpt::READABLE | EventOpt::PERSIST,
+    m_listen_event = GetThread()->RegisterEvent(m_listen_fd, EventOpt::READABLE | EventOpt::PERSIST,
     [weak_this{weak_from_this()}, onaccept_cb, thread{GetThread()}](int fd, short events, EventId evetid){
         if (auto shared_this = weak_this.lock(); shared_this != nullptr) {
             auto pthis = std::static_pointer_cast<TcpServer>(shared_this);
@@ -109,7 +110,10 @@ bbt::core::errcode::ErrOpt TcpServer::StopListen()
         return Errcode{"cancel event failed!", ERRTYPE_ERROR};
 
     m_listen_event = nullptr;
+    if (m_listen_fd > 0)
+        ::close(m_listen_fd);
 
+    m_listen_fd = -1;
     return FASTERR_NOTHING;
 }
 

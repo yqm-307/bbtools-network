@@ -103,6 +103,7 @@ private:
     std::mutex                      m_conn_map_mutex;
 
     IPAddress                       m_listen_addr;
+    int                             m_listen_fd{-1};
     std::shared_ptr<Event>          m_listen_event{nullptr};
     std::mutex                      m_listen_mtx;
 
