@@ -11,6 +11,8 @@ class TcpServer final:
 {
 public:
     TcpServer(std::shared_ptr<EvThread> evthread);
+    TcpServer(int nthread);
+    TcpServer(const std::vector<std::shared_ptr<EvThread>>& evthreads);
     ~TcpServer();
 
     /**
@@ -96,7 +98,10 @@ private:
     struct AddressHash { std::size_t operator()(const IPAddress& addr) const { return core::crypto::BKDR::BKDRHash(addr.GetIPPort());}; };
 
 private:
-    std::shared_ptr<pollevent::EvThread> m_ev_thread{nullptr};
+    std::vector<pollevent::EvThread::SPtr>          m_thread_pool;
+    const size_t                                    m_thread_count{0};
+    uint8_t                                         m_load_blance{0};
+
     detail::ConnCallbacks           callbacks;
 
     std::unordered_map<ConnId, detail::ConnectionSPtr> m_conn_map;

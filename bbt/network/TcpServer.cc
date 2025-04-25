@@ -10,7 +10,25 @@ namespace bbt::network
 {
 
 TcpServer::TcpServer(std::shared_ptr<EvThread> evthread):
-    m_ev_thread(evthread),
+    m_thread_pool({evthread}),
+    m_thread_count(1),
+    m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
+{
+}
+
+TcpServer::TcpServer(int nthread):
+    m_thread_pool(std::vector<std::shared_ptr<EvThread>>(nthread)),
+    m_thread_count(nthread),
+    m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
+{
+    for (int i = 0; i < nthread; ++i) {
+        m_thread_pool[i] = std::make_shared<EvThread>();
+    }
+}
+
+TcpServer::TcpServer(const std::vector<std::shared_ptr<EvThread>>& evthreads):
+    m_thread_pool(evthreads),
+    m_thread_count(evthreads.size()),
     m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
 {
 }
@@ -67,6 +85,11 @@ void TcpServer::Init()
                 shared_this->m_on_err(Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
         }
     };
+
+    for (auto& thread : m_thread_pool) {
+        if (thread != nullptr)
+            thread->Start();
+    }
 }
 
 bbt::core::errcode::ErrOpt TcpServer::AsyncListen(const bbt::core::net::IPAddress& listen_addr, const OnAcceptFunc& onaccept_cb)
@@ -222,7 +245,8 @@ void TcpServer::OnClose(ConnId connid)
 
 std::shared_ptr<EvThread> TcpServer::GetThread()
 {
-    return m_ev_thread;
+    m_load_blance = m_load_blance + 1;
+    return m_thread_pool[m_load_blance % m_thread_count];
 }
 
 void TcpServer::_InitConnection(std::shared_ptr<detail::Connection> conn)
