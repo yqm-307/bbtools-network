@@ -3,8 +3,10 @@
 #include <bbt/pollevent/EvThread.hpp>
 #include <bbt/pollevent/EventLoop.hpp>
 #include <bbt/pollevent/Event.hpp>
+#include <bbt/core/clock/Clock.hpp>
 
 using namespace bbt::network;
+using namespace bbt::core::clock;
 std::shared_ptr<Event> Print = nullptr;
 
 std::map<ConnId, std::shared_ptr<Event>> SendEventMap;
@@ -18,17 +20,17 @@ std::shared_ptr<TcpClient> NewClient(std::shared_ptr<EvThread> evthread)
 
     // ctrl z 事件监听
     evthread->RegisterEvent(0, EventOpt::SIGNAL, [](auto, short events, auto){
-        std::cout << "[Echo Client] ctrl z" << std::endl;
+        std::cout << getnow_str() << "[Echo Client] ctrl z" << std::endl;
     });
 
     client->Init();
     client->SetOnConnect([client, evthread](auto id, auto err){
         if (err.has_value()) {
-            std::cout << "[Echo Client] connect error: " << err->CWhat() << std::endl;
+            std::cout << getnow_str() << "[Echo Client] connect error: " << err->CWhat() << std::endl;
             return;
         }
         else
-            std::cout << "[Echo Client] connect success! " << id << std::endl;
+            std::cout << getnow_str() << "[Echo Client] connect success! " << id << std::endl;
 
         std::lock_guard<std::mutex> _(MonitorInfoMapMutex);
 
@@ -58,7 +60,7 @@ std::shared_ptr<TcpClient> NewClient(std::shared_ptr<EvThread> evthread)
     });
 
     client->SetOnClose([client](ConnId id){
-        std::cout << "[Echo Client] close success! " << id << std::endl;
+        std::cout << getnow_str() << "[Echo Client] close success! " << id << " err=" << errno << std::endl;
     });
 
     client->SetOnRecv([client](ConnId id, auto& buffer){
@@ -73,7 +75,7 @@ std::shared_ptr<TcpClient> NewClient(std::shared_ptr<EvThread> evthread)
 
     client->SetOnSend([client](ConnId id, auto err, auto send_len){
         if (err.has_value())
-            std::cout << "[Echo Client] send error: " << err->CWhat() << std::endl;
+            std::cout << getnow_str() << "[Echo Client] send error: " << err->CWhat() << std::endl;
         else {
             std::lock_guard<std::mutex> _(MonitorInfoMapMutex);
             auto it = MonitorInfoMap.find(id);
@@ -103,7 +105,7 @@ int main(int args, char* argv[])
     for (int i = 0; i < max_client; ++i) {
         auto client = NewClient(evthread);
         if (auto err = client->AsyncConnect(bbt::core::net::IPAddress{ip, port}, 3000); err.has_value()) {
-            std::cout << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
+            std::cout << getnow_str() << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
             continue;
         }
         clients.push_back(client);

@@ -32,7 +32,7 @@
             "name": "echo server",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/unit_test/echo_server",
+            "program": "${workspaceFolder}/build/bin/example/echo_server",
             "args": ["10010"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/bin",
