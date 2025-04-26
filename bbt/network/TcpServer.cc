@@ -210,6 +210,16 @@ void TcpServer::Close(ConnId connid)
     conn->Close();
 }
 
+detail::ConnectionSPtr TcpServer::GetConnection(ConnId connid)
+{
+    std::lock_guard<std::mutex> _(m_conn_map_mutex);
+    auto it = m_conn_map.find(connid);
+    if (it == m_conn_map.end())
+        return nullptr;
+    
+    return it->second;
+}
+
 void TcpServer::OnTimeout(ConnId connid)
 {
     if (m_on_timeout != nullptr)

@@ -77,6 +77,14 @@ public:
      */
     void            Close(ConnId connid);
 
+    /**
+     * @brief 获取指定连接的对象
+     * 
+     * @param connid 
+     * @return detail::ConnectionSPtr 
+     */
+    detail::ConnectionSPtr GetConnection(ConnId connid);
+
     // 设置回调
     void            SetOnTimeout(const OnTimeoutFunc& on_timeout) { m_on_timeout = on_timeout; }
     void            SetOnClose(const OnCloseFunc& on_close) { m_on_close = on_close; }
