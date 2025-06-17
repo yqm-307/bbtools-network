@@ -104,8 +104,12 @@ int main(int args, char* argv[])
 
     for (int i = 0; i < max_client; ++i) {
         auto client = NewClient(evthread);
-        if (auto err = client->AsyncConnect(bbt::core::net::IPAddress{ip, port}, 3000); err.has_value()) {
-            std::cout << getnow_str() << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
+        // if (auto err = client->AsyncConnect(bbt::core::net::IPAddress{ip, port}, 3000); err.has_value()) {
+        //     std::cout << getnow_str() << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
+        //     continue;
+        // }
+        if (auto err = client->Connect(bbt::core::net::IPAddress{ip, port}, 3000); err.has_value()) {
+            std::cout << getnow_str() << "[Echo Client] Connect error: " << err->CWhat() << std::endl;
             continue;
         }
         clients.push_back(client);

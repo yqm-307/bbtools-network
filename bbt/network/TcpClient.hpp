@@ -28,6 +28,8 @@ public:
      */
     core::errcode::ErrOpt AsyncConnect(const bbt::core::net::IPAddress& addr, int timeout);
 
+    core::errcode::ErrOpt Connect(const bbt::core::net::IPAddress& addr, int timeout);
+
     /**
      * @brief 重新发起连接
      * 
@@ -77,6 +79,7 @@ public:
 private:
     std::shared_ptr<pollevent::EvThread> _GetThread();
     void            _DoConnect(int socket, short events);
+    void            _DoConnectThreadSafe(int socket, short events);
     void            _InitConnection(std::shared_ptr<detail::Connection> conn);
     void            _OnClose(ConnId id);
 private:

@@ -42,7 +42,7 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
     [weak_this{weak_from_this()}](int fd, short events, EventId id)
     {
         if (auto shared_this = weak_this.lock(); shared_this != nullptr)
-            shared_this->_DoConnect(fd, events);
+            shared_this->_DoConnectThreadSafe(fd, events);
     });
 
     if (m_connect_event->StartListen(m_connect_timeout) != 0)
@@ -50,6 +50,31 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
         m_connect_event = nullptr;
         return FASTERR_ERROR("event start listen failed!");
     }
+
+    return FASTERR_NOTHING;
+}
+
+core::errcode::ErrOpt TcpClient::Connect(const bbt::core::net::IPAddress& addr, int timeout)
+{
+    std::lock_guard<std::mutex> _(m_connect_mtx);
+    
+    if (IsConnected())
+        return FASTERR_ERROR("is connected!");
+
+    if (m_connect_event != nullptr)
+        return FASTERR_ERROR("already connecting!");
+    
+    int fd = bbt::core::net::Util::CreateConnect(addr.GetIP().c_str(), addr.GetPort(), false);
+    if (fd < 0)
+        return FASTERR_ERROR("create connect socket failed!");
+
+    m_serv_addr = addr;
+    m_connect_timeout = timeout >= 0 ? timeout : 0;
+
+    _DoConnect(fd, EventOpt::WRITEABLE);
+
+    if (m_conn == nullptr)
+        return FASTERR_ERROR("connect failed!");
 
     return FASTERR_NOTHING;
 }
@@ -62,11 +87,8 @@ core::errcode::ErrOpt TcpClient::ReConnect()
 
 void TcpClient::_DoConnect(int socket, short events)
 {
-    std::shared_ptr<detail::Connection> new_conn{nullptr};
-    std::lock_guard<std::mutex> _(m_connect_mtx);
-
     if (events & EventOpt::TIMEOUT) {
-        m_on_connect(-1, FASTERR_ERROR("connect timeout!"));
+        if (m_on_connect) m_on_connect(-1, FASTERR_ERROR("connect timeout!"));
         goto ConnectFinal;
     }
 
@@ -78,19 +100,25 @@ void TcpClient::_DoConnect(int socket, short events)
             }
 
             if (err == ECONNREFUSED) {
-                m_on_connect(-1, FASTERR_ERROR("connect refused!"));
+                if (m_on_connect) m_on_connect(-1, FASTERR_ERROR("connect refused!"));
                 goto ConnectFinal;
             }
         }
     }
 
     m_conn = std::make_shared<detail::Connection>(m_ev_thread, socket, m_serv_addr);
-    m_on_connect(m_conn->GetConnId(), FASTERR_NOTHING);
+    if (m_on_connect) m_on_connect(m_conn->GetConnId(), FASTERR_NOTHING);
     _InitConnection(m_conn);
 
 ConnectFinal:
     // connect 处理完毕，销毁事件和连接
     m_connect_event = nullptr;
+}
+
+void TcpClient::_DoConnectThreadSafe(int socket, short events)
+{
+    std::lock_guard<std::mutex> _(m_connect_mtx);
+    self:_DoConnect(socket, events);
 }
 
 void TcpClient::Init()
