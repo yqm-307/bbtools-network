@@ -9,7 +9,7 @@ using namespace bbt::network;
 int main()
 {
     auto evthread = std::make_shared<EvThread>(std::make_shared<bbt::pollevent::EventLoop>());
-    auto client = std::make_shared<TcpClient>(evthread);
+    auto client = TcpClient::Create(evthread);
 
     client->Init();
 

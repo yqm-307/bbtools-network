@@ -16,7 +16,7 @@ std::mutex MonitorInfoMapMutex;
 
 std::shared_ptr<TcpClient> NewClient(std::shared_ptr<EvThread> evthread)
 {
-    auto client = std::make_shared<TcpClient>(evthread);
+    auto client = TcpClient::Create(evthread);
 
     // ctrl z 事件监听
     evthread->RegisterEvent(0, EventOpt::SIGNAL, [](auto, short events, auto){

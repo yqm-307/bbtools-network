@@ -9,14 +9,14 @@ using namespace bbt::core::errcode;
 namespace bbt::network
 {
 
-TcpServer::TcpServer(std::shared_ptr<EvThread> evthread):
+TcpServer::TcpServer(PrivateTag, std::shared_ptr<EvThread> evthread):
     m_thread_pool({evthread}),
     m_thread_count(1),
     m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
 {
 }
 
-TcpServer::TcpServer(int nthread):
+TcpServer::TcpServer(PrivateTag, int nthread):
     m_thread_pool(std::vector<std::shared_ptr<EvThread>>(nthread)),
     m_thread_count(nthread),
     m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
@@ -26,7 +26,7 @@ TcpServer::TcpServer(int nthread):
     }
 }
 
-TcpServer::TcpServer(const std::vector<std::shared_ptr<EvThread>>& evthreads):
+TcpServer::TcpServer(PrivateTag, const std::vector<std::shared_ptr<EvThread>>& evthreads):
     m_thread_pool(evthreads),
     m_thread_count(evthreads.size()),
     m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
@@ -36,6 +36,21 @@ TcpServer::TcpServer(const std::vector<std::shared_ptr<EvThread>>& evthreads):
 TcpServer::~TcpServer()
 {
     StopListen();
+}
+
+std::shared_ptr<TcpServer> TcpServer::Create(std::shared_ptr<EvThread> evthread)
+{
+    return std::make_shared<TcpServer>(PrivateTag{}, evthread);
+}
+
+std::shared_ptr<TcpServer> TcpServer::Create(int nthread)
+{
+    return std::make_shared<TcpServer>(PrivateTag{}, nthread);
+}
+
+std::shared_ptr<TcpServer> TcpServer::Create(const std::vector<std::shared_ptr<EvThread>>& evthreads)
+{
+    return std::make_shared<TcpServer>(PrivateTag{}, evthreads);
 }
 
 void TcpServer::Init()
@@ -172,7 +187,7 @@ void TcpServer::_Accept(int listenfd, short events, const OnAcceptFunc& onaccept
         if (fd < 0) break;
 
         endpoint.set(client_addr);
-        new_conn_sptr = std::make_shared<detail::Connection>(thread, fd, endpoint);
+        new_conn_sptr = detail::Connection::Create(thread, fd, endpoint);
         // 保存连接
         {
             std::lock_guard<std::mutex> _(m_conn_map_mutex);

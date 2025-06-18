@@ -18,15 +18,17 @@ namespace bbt::network::detail
 {
 
 class Connection:
-    public std::enable_shared_from_this<Connection>
+    public std::enable_shared_from_this<Connection>,
+    boost::noncopyable
 {
     friend class EvThread;
 public:
-    Connection(
+    BBTATTR_FUNC_CTOR_HIDDEN Connection(
         std::weak_ptr<EvThread> thread,
         evutil_socket_t           socket,
         const IPAddress&          ipaddr
     );
+
     virtual ~Connection();
 
 

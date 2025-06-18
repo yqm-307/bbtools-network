@@ -11,7 +11,7 @@ class EchoServer
     struct UData{ConnId connid{0};};
 public:
     EchoServer(const bbt::core::net::IPAddress& addr, std::shared_ptr<EvThread> evthread):
-        m_server(std::make_shared<TcpServer>(evthread)),
+        m_server(TcpServer::Create(evthread)),
         m_addr(addr)
     {
         m_server->Init();

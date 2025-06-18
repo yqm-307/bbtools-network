@@ -9,11 +9,22 @@ namespace bbt::network
 class TcpServer final:
     public std::enable_shared_from_this<TcpServer>
 {
+    struct PrivateTag {};
 public:
-    TcpServer(std::shared_ptr<EvThread> evthread);
-    TcpServer(int nthread);
-    TcpServer(const std::vector<std::shared_ptr<EvThread>>& evthreads);
+    BBTATTR_FUNC_CTOR_HIDDEN
+    TcpServer(PrivateTag, std::shared_ptr<EvThread> evthread);
+
+    BBTATTR_FUNC_CTOR_HIDDEN
+    TcpServer(PrivateTag, int nthread);
+
+    BBTATTR_FUNC_CTOR_HIDDEN
+    TcpServer(PrivateTag, const std::vector<std::shared_ptr<EvThread>>& evthreads);
+
     ~TcpServer();
+
+    static std::shared_ptr<TcpServer> Create(std::shared_ptr<EvThread> evthread);
+    static std::shared_ptr<TcpServer> Create(int nthread);
+    static std::shared_ptr<TcpServer> Create(const std::vector<std::shared_ptr<EvThread>>& evthreads);
 
     /**
      * @brief 初始化内部事件

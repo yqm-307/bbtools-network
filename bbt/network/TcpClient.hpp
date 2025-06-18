@@ -8,9 +8,12 @@ namespace bbt::network
 class TcpClient final:
     public std::enable_shared_from_this<TcpClient>
 {
+    struct PrivateTag {};
 public:
-    TcpClient(std::shared_ptr<pollevent::EvThread> evthread);
+    TcpClient(PrivateTag, std::shared_ptr<pollevent::EvThread> evthread);
     ~TcpClient() = default;
+
+    static std::shared_ptr<TcpClient> Create(std::shared_ptr<pollevent::EvThread> evthread);
 
     /**
      * @brief 初始化TcpClient的内部事件

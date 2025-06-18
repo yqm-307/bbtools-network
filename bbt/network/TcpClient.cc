@@ -11,10 +11,15 @@ using namespace bbt::core::errcode;
 namespace bbt::network
 {
 
-TcpClient::TcpClient(std::shared_ptr<EvThread> evthread):
+TcpClient::TcpClient(PrivateTag, std::shared_ptr<EvThread> evthread):
     m_ev_thread(evthread),
     m_on_err([](auto& err){ std::cerr << "[TcpClient::DefaultErr] " << err.CWhat() << std::endl; })
 {
+}
+
+std::shared_ptr<TcpClient> TcpClient::Create(std::shared_ptr<EvThread> evthread)
+{
+    return std::make_shared<TcpClient>(PrivateTag{}, evthread);
 }
 
 ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeout)
@@ -106,7 +111,7 @@ void TcpClient::_DoConnect(int socket, short events)
         }
     }
 
-    m_conn = std::make_shared<detail::Connection>(m_ev_thread, socket, m_serv_addr);
+    m_conn = detail::Connection::Create(m_ev_thread, socket, m_serv_addr);
     if (m_on_connect) m_on_connect(m_conn->GetConnId(), FASTERR_NOTHING);
     _InitConnection(m_conn);
 
