@@ -28,6 +28,10 @@ public:
                 std::cout << getnow_str() << "[EchoServer] send error: " << err->CWhat() << std::endl;
         });
         m_server->SetOnSend([this](ConnId id, bbt::core::errcode::ErrOpt err, size_t len){});
+        m_server->SetOnErr([this](auto connid, const bbt::core::errcode::Errcode& err){
+            std::cout << getnow_str() << "[EchoServer] error: " << err.CWhat() << std::endl;
+            m_server->Close(connid);
+        });
     }
 
     ~EchoServer()
@@ -58,7 +62,13 @@ int main(int args, char* argv[])
 
     std::shared_ptr<EvThread> evthread = std::make_shared<EvThread>(std::make_shared<bbt::pollevent::EventLoop>());
 
-    EchoServer server{bbt::core::net::IPAddress{"", std::atoi(argv[1])}, evthread};
+    auto rlt = bbt::core::net::make_ip_address("127.0.0.1", std::atoi(argv[1]));
+    if (rlt.IsErr()) {
+        std::cout << "make ip address failed! " << rlt.Err().CWhat() << std::endl;
+        return -1;
+    }
+
+    EchoServer server{rlt.Ok(), evthread};
 
     server.Start();
 

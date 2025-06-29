@@ -12,14 +12,14 @@ namespace bbt::network
 TcpServer::TcpServer(PrivateTag, std::shared_ptr<EvThread> evthread):
     m_thread_pool({evthread}),
     m_thread_count(1),
-    m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
+    m_on_err([](auto connid, auto& err){ std::cerr << "[TcpServer::DefaultErr] connid=" << connid << "\terr="<< err.CWhat() << std::endl; })
 {
 }
 
 TcpServer::TcpServer(PrivateTag, int nthread):
     m_thread_pool(std::vector<std::shared_ptr<EvThread>>(nthread)),
     m_thread_count(nthread),
-    m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
+    m_on_err([](auto connid, auto& err){ std::cerr << "[TcpServer::DefaultErr] connid=" << connid << "\terr="<< err.CWhat() << std::endl; })
 {
     for (int i = 0; i < nthread; ++i) {
         m_thread_pool[i] = std::make_shared<EvThread>();
@@ -29,7 +29,7 @@ TcpServer::TcpServer(PrivateTag, int nthread):
 TcpServer::TcpServer(PrivateTag, const std::vector<std::shared_ptr<EvThread>>& evthreads):
     m_thread_pool(evthreads),
     m_thread_count(evthreads.size()),
-    m_on_err([](auto& err){ std::cerr << "[TcpServer::DefaultErr] " << err.CWhat() << std::endl; })
+    m_on_err([](auto connid, auto& err){ std::cerr << "[TcpServer::DefaultErr] connid=" << connid << "\terr="<< err.CWhat() << std::endl; })
 {
 }
 
@@ -63,9 +63,9 @@ void TcpServer::Init()
         }
     };
 
-    callbacks.on_err_callback = [weak_this{weak_from_this()}](auto err){
+    callbacks.on_err_callback = [weak_this{weak_from_this()}](auto connid, auto err){
         if (auto shared_this = weak_this.lock(); shared_this != nullptr && shared_this->m_on_err)
-            shared_this->m_on_err(err);
+            shared_this->m_on_err(connid, err);
     };
 
     callbacks.on_recv_callback =
@@ -75,7 +75,7 @@ void TcpServer::Init()
             if (shared_this->m_on_recv)
                 shared_this->m_on_recv(conn->GetConnId(), bbt::core::Buffer{data, len});
             else
-                shared_this->m_on_err(Errcode{"no register onrecv!", emErr::ERRTYPE_ERROR});
+                shared_this->m_on_err(conn->GetConnId(), Errcode{"no register onrecv!", emErr::ERRTYPE_ERROR});
         }
     };
 
@@ -86,7 +86,7 @@ void TcpServer::Init()
             if (shared_this->m_on_send)
                 shared_this->m_on_send(conn->GetConnId(), err, send_succ_len);
             else
-                shared_this->m_on_err(Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
+                shared_this->m_on_err(conn->GetConnId(), Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
         }
     };
 
@@ -97,7 +97,7 @@ void TcpServer::Init()
             if (shared_this->m_on_timeout)
                 shared_this->m_on_timeout(conn->GetConnId());
             else
-                shared_this->m_on_err(Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
+                shared_this->m_on_err(conn->GetConnId(), Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
         }
     };
 
@@ -114,7 +114,11 @@ bbt::core::errcode::ErrOpt TcpServer::AsyncListen(const bbt::core::net::IPAddres
     if (m_listen_event != nullptr)
         return Errcode{"already listening!", ERRTYPE_ERROR};
 
-    m_listen_fd = Util::CreateListen(listen_addr.GetIP().c_str(), listen_addr.GetPort(), true);
+    if (auto rlt = CreateListen(listen_addr.GetIP().c_str(), listen_addr.GetPort(), true); rlt.IsErr())
+        return rlt.Err();
+    else
+        m_listen_fd = rlt.Ok();
+
     if (m_listen_fd < 0)
         return Errcode{"create listen socket failed! errno=" + std::to_string(errno) + ", errstr=" + std::string{strerror(errno)}, ERRTYPE_ERROR};
 
@@ -186,7 +190,7 @@ void TcpServer::_Accept(int listenfd, short events, const OnAcceptFunc& onaccept
         fd = ::accept(listenfd, reinterpret_cast<sockaddr*>(&client_addr), &len);
         if (fd < 0) break;
 
-        endpoint.set(client_addr);
+        endpoint.From(reinterpret_cast<sockaddr*>(&client_addr), len);
         new_conn_sptr = detail::Connection::Create(thread, fd, endpoint);
         // 保存连接
         {
@@ -265,7 +269,7 @@ void TcpServer::OnClose(ConnId connid)
     if (m_on_close != nullptr)
         m_on_close(connid);
     else
-        m_on_err(Errcode{"no register onclose!", emErr::ERRTYPE_ERROR});
+        m_on_err(connid, Errcode{"no register onclose!", emErr::ERRTYPE_ERROR});
 }
 
 std::shared_ptr<EvThread> TcpServer::GetThread()

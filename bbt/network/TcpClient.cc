@@ -13,7 +13,7 @@ namespace bbt::network
 
 TcpClient::TcpClient(PrivateTag, std::shared_ptr<EvThread> evthread):
     m_ev_thread(evthread),
-    m_on_err([](auto& err){ std::cerr << "[TcpClient::DefaultErr] " << err.CWhat() << std::endl; })
+    m_on_err([](auto connid, auto& err){ std::cerr << "[TcpServer::DefaultErr] connid=" << connid << "\terr="<< err.CWhat() << std::endl; })
 {
 }
 
@@ -26,6 +26,7 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
 {    
     std::lock_guard<std::mutex> _(m_connect_mtx);
 
+    int fd = -1;
     m_serv_addr = addr;
     m_connect_timeout = timeout >= 0 ? timeout : 0;
     
@@ -39,9 +40,10 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
     if (thread == nullptr)
         return FASTERR_ERROR("evthread is null!");
     
-    int fd = bbt::core::net::Util::CreateConnect(addr.GetIP().c_str(), addr.GetPort(), true);
-    if (fd < 0)
-        return FASTERR_ERROR("create connect socket failed!");
+    if (auto err = bbt::core::net::CreateConnect(addr.GetIP().c_str(), addr.GetPort(), true); err.IsErr())
+        return err.Err();
+    else
+        fd = err.Ok();
     
     m_connect_event = thread->RegisterEvent(fd, EventOpt::WRITEABLE | EventOpt::TIMEOUT | EventOpt::PERSIST,
     [weak_this{weak_from_this()}](int fd, short events, EventId id)
@@ -62,16 +64,18 @@ ErrOpt TcpClient::AsyncConnect(const bbt::core::net::IPAddress& addr, int timeou
 core::errcode::ErrOpt TcpClient::Connect(const bbt::core::net::IPAddress& addr, int timeout)
 {
     std::lock_guard<std::mutex> _(m_connect_mtx);
-    
+    int fd = -1;
+
     if (IsConnected())
         return FASTERR_ERROR("is connected!");
 
     if (m_connect_event != nullptr)
         return FASTERR_ERROR("already connecting!");
     
-    int fd = bbt::core::net::Util::CreateConnect(addr.GetIP().c_str(), addr.GetPort(), false);
-    if (fd < 0)
-        return FASTERR_ERROR("create connect socket failed!");
+    if (auto err = bbt::core::net::CreateConnect(addr.GetIP().c_str(), addr.GetPort(), false); err.IsErr())
+        return err.Err();
+    else
+        fd = err.Ok();
 
     m_serv_addr = addr;
     m_connect_timeout = timeout >= 0 ? timeout : 0;
@@ -92,13 +96,21 @@ core::errcode::ErrOpt TcpClient::ReConnect()
 
 void TcpClient::_DoConnect(int socket, short events)
 {
+    struct sockaddr_in serv_addr;
+    socklen_t addr_len = sizeof(serv_addr);
+
     if (events & EventOpt::TIMEOUT) {
         if (m_on_connect) m_on_connect(-1, FASTERR_ERROR("connect timeout!"));
         goto ConnectFinal;
     }
 
     if (events & EventOpt::WRITEABLE) {
-        if (::connect(socket, m_serv_addr.getsockaddr(), m_serv_addr.getsocklen()) != 0) {
+        if (auto err = m_serv_addr.GetRawData(reinterpret_cast<sockaddr*>(&serv_addr), addr_len); err.has_value()) {
+            if (m_on_err) m_on_err(-1, err.value());
+            goto ConnectFinal;
+        }
+
+        if (::connect(socket, reinterpret_cast<sockaddr*>(&serv_addr), addr_len) != 0) {
             int err = evutil_socket_geterror(socket);
             if (err == EINTR || err == EINPROGRESS) {
                 return;
@@ -136,9 +148,9 @@ void TcpClient::Init()
         }
     };
 
-    callbacks.on_err_callback = [weak_this{weak_from_this()}](auto err){
+    callbacks.on_err_callback = [weak_this{weak_from_this()}](auto connid, auto err){
         if (auto shared_this = weak_this.lock(); shared_this != nullptr && shared_this->m_on_err)
-            shared_this->m_on_err(err);
+            shared_this->m_on_err(connid, err);
     };
 
     callbacks.on_recv_callback =
@@ -148,7 +160,7 @@ void TcpClient::Init()
             if (shared_this->m_on_recv)
                 shared_this->m_on_recv(conn->GetConnId(), bbt::core::Buffer{data, len});
             else
-                shared_this->m_on_err(Errcode{"no register onrecv!", emErr::ERRTYPE_ERROR});
+                shared_this->m_on_err(conn->GetConnId(), Errcode{"no register onrecv!", emErr::ERRTYPE_ERROR});
         }
     };
 
@@ -159,7 +171,7 @@ void TcpClient::Init()
             if (shared_this->m_on_send)
                 shared_this->m_on_send(conn->GetConnId(), err, send_succ_len);
             else
-                shared_this->m_on_err(Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
+                shared_this->m_on_err(conn->GetConnId(), Errcode{"no register onsend!", emErr::ERRTYPE_ERROR});
         }
     };
 
@@ -170,7 +182,7 @@ void TcpClient::Init()
             if (shared_this->m_on_timeout)
                 shared_this->m_on_timeout(conn->GetConnId());
             else
-                shared_this->m_on_err(Errcode{"no register ontimeout!", emErr::ERRTYPE_ERROR});
+                shared_this->m_on_err(conn->GetConnId(), Errcode{"no register ontimeout!", emErr::ERRTYPE_ERROR});
         }
     };
 }
@@ -194,7 +206,7 @@ void TcpClient::_OnClose(ConnId id)
     if (m_on_close)
         m_on_close(id);
     else
-        m_on_err(Errcode{"no register onclose!", emErr::ERRTYPE_ERROR});
+        m_on_err(id, Errcode{"no register onclose!", emErr::ERRTYPE_ERROR});
 }
 
 std::shared_ptr<EvThread> TcpClient::_GetThread()

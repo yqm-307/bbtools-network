@@ -108,7 +108,12 @@ int main(int args, char* argv[])
         //     std::cout << getnow_str() << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
         //     continue;
         // }
-        if (auto err = client->Connect(bbt::core::net::IPAddress{ip, port}, 3000); err.has_value()) {
+        auto rlt = bbt::core::net::make_ip_address(ip, port);
+        if (rlt.IsErr()) {
+            std::cout << getnow_str() << "[Echo Client] make_ip_address error: " << rlt.Err().CWhat() << std::endl;
+            continue;
+        }
+        if (auto err = client->Connect(rlt.Ok(), 3000); err.has_value()) {
             std::cout << getnow_str() << "[Echo Client] Connect error: " << err->CWhat() << std::endl;
             continue;
         }

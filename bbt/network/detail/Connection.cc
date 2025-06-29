@@ -101,7 +101,7 @@ void Connection::OnTimeout()
 void Connection::OnError(const Errcode& err)
 {
     if (m_callbacks.on_err_callback) {
-        m_callbacks.on_err_callback(err);
+        m_callbacks.on_err_callback(m_conn_id, err);
     }
 }
 

@@ -76,7 +76,10 @@
         "defer-internal.h": "c",
         "charconv": "cpp",
         "span": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "csignal": "cpp",
+        "codecvt": "cpp",
+        "future": "cpp"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/g++",
     "C_Cpp.default.includePath": [

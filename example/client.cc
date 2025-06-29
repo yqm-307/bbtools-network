@@ -2,6 +2,7 @@
 #include <bbt/network/TcpClient.hpp>
 #include <bbt/pollevent/EvThread.hpp>
 #include <bbt/core/clock/Clock.hpp>
+#include <bbt/core/net/SocketUtil.hpp>
 
 using namespace bbt::core::errcode;
 using namespace bbt::network;
@@ -24,7 +25,7 @@ int main()
         std::cout << bbt::core::clock::getnow_str() << "onconnect! " << (err.has_value() ? err->CWhat() : "succ") << std::endl;
     });
 
-    client->AsyncConnect({"127.0.0.1", 11001}, 100);
+    client->AsyncConnect(bbt::core::net::make_ip_address("127.0.0.1", 11001).Ok(), 100);
 
     evthread->Start();
 

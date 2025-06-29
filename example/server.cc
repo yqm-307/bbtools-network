@@ -20,12 +20,20 @@ int main()
         std::cout << bbt::core::clock::getnow_str() << "timeout" << id << std::endl;
     });
 
-    auto err = server->AsyncListen({"", 11001}, [](ConnId id){
-        std::cout << bbt::core::clock::getnow_str() << "connect new conn" << id << std::endl;
-    });
+    if (auto rlt = bbt::core::net::make_ip_address("127.0.0.1", 11001); rlt.IsErr())
+    {
+        std::cout << "make ip address failed! " << rlt.Err().CWhat() << std::endl;
+        return -1;
+    }
+    else
+    {
+        auto err = server->AsyncListen(rlt.Ok(), [](ConnId id){
+            std::cout << bbt::core::clock::getnow_str() << "connect new conn" << id << std::endl;
+        });
 
-    if (err.has_value())
-        std::cout << err->CWhat() << std::endl;    
+        if (err.has_value())
+            std::cout << err->CWhat() << std::endl;    
+    }
 
     evthread->Start();
 
