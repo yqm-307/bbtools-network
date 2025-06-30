@@ -120,6 +120,10 @@ void TcpClient::_DoConnect(int socket, short events)
                 if (m_on_connect) m_on_connect(-1, FASTERR_ERROR("connect refused!"));
                 goto ConnectFinal;
             }
+            else {
+                if (m_on_connect) m_on_connect(-1, FASTERR_ERROR("connect error: " + std::string(evutil_socket_error_to_string(err))));
+                goto ConnectFinal;
+            }
         }
     }
 

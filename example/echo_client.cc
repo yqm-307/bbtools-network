@@ -8,6 +8,7 @@
 using namespace bbt::network;
 using namespace bbt::core::clock;
 std::shared_ptr<Event> Print = nullptr;
+std::shared_ptr<Event> signal_event = nullptr;
 
 std::map<ConnId, std::shared_ptr<Event>> SendEventMap;
 
@@ -19,7 +20,7 @@ std::shared_ptr<TcpClient> NewClient(std::shared_ptr<EvThread> evthread)
     auto client = TcpClient::Create(evthread);
 
     // ctrl z 事件监听
-    evthread->RegisterEvent(0, EventOpt::SIGNAL, [](auto, short events, auto){
+    signal_event = evthread->RegisterEvent(0, EventOpt::SIGNAL, [](auto, short events, auto){
         std::cout << getnow_str() << "[Echo Client] ctrl z" << std::endl;
     });
 
@@ -86,6 +87,8 @@ std::shared_ptr<TcpClient> NewClient(std::shared_ptr<EvThread> evthread)
         }
     });
 
+    client->SetConnectionTimeout(5000);
+
     return client;
 }
 
@@ -104,19 +107,20 @@ int main(int args, char* argv[])
 
     for (int i = 0; i < max_client; ++i) {
         auto client = NewClient(evthread);
-        // if (auto err = client->AsyncConnect(bbt::core::net::IPAddress{ip, port}, 3000); err.has_value()) {
-        //     std::cout << getnow_str() << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
-        //     continue;
-        // }
         auto rlt = bbt::core::net::make_ip_address(ip, port);
         if (rlt.IsErr()) {
             std::cout << getnow_str() << "[Echo Client] make_ip_address error: " << rlt.Err().CWhat() << std::endl;
             continue;
         }
-        if (auto err = client->Connect(rlt.Ok(), 3000); err.has_value()) {
-            std::cout << getnow_str() << "[Echo Client] Connect error: " << err->CWhat() << std::endl;
+        if (auto err = client->AsyncConnect(rlt.Ok(), 3000); err.has_value()) {
+            std::cout << getnow_str() << "[Echo Client] AsyncConnect error: " << err->CWhat() << std::endl;
             continue;
         }
+
+        // if (auto err = client->Connect(rlt.Ok(), 3000); err.has_value()) {
+        //     std::cout << getnow_str() << "[Echo Client] Connect error: " << err->CWhat() << std::endl;
+        //     continue;
+        // }
         clients.push_back(client);
     }
 

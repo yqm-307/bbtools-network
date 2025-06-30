@@ -23,6 +23,7 @@ public:
             std::cout << getnow_str() << "[EchoServer] on close " << connid << std::endl;
         });
         m_server->SetOnRecv([this](auto connid, const bbt::core::Buffer& buffer){
+            // std::cout << getnow_str() << "[EchoServer] on recv " << connid << " data: " << buffer.Peek() << std::endl;
             auto err = m_server->Send(connid, buffer);
             if (err.has_value())
                 std::cout << getnow_str() << "[EchoServer] send error: " << err->CWhat() << std::endl;

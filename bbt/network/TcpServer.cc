@@ -220,13 +220,18 @@ ErrOpt TcpServer::Send(ConnId connid, const bbt::core::Buffer& buffer)
 
 void TcpServer::Close(ConnId connid)
 {
-    std::lock_guard<std::mutex> _(m_conn_map_mutex);
-    auto it = m_conn_map.find(connid);
-    if (it == m_conn_map.end())
-        return;
-    
-    auto conn = it->second;
-    conn->Close();
+    std::shared_ptr<detail::Connection> conn = nullptr;
+    {
+        std::lock_guard<std::mutex> _(m_conn_map_mutex);
+        auto it = m_conn_map.find(connid);
+        if (it == m_conn_map.end())
+            return;
+        
+        auto conn = it->second;
+    }
+
+    if (conn)
+        conn->Close();
 }
 
 detail::ConnectionSPtr TcpServer::GetConnection(ConnId connid)
@@ -260,7 +265,7 @@ void TcpServer::OnRecv(ConnId connid, bbt::core::Buffer& buffer)
 void TcpServer::OnClose(ConnId connid)
 {
     {
-        std::lock_guard<std::mutex> _(m_conn_map_mutex);
+        std::unique_lock<std::mutex> _{m_conn_map_mutex};
         auto it = m_conn_map.find(connid);
         if (it != m_conn_map.end())
             m_conn_map.erase(it);
